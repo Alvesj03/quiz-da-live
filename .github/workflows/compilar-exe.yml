@@ -1,0 +1,53 @@
+name: Compilar o jogo (.exe)
+
+# Roda quando você clica em "Run workflow" na aba Actions,
+# e também quando você publica uma versão (uma "tag" começando com v, como v1.0.0).
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar os componentes do jogo
+        run: npm install --omit=dev --no-audit --no-fund
+
+      - name: Instalar as ferramentas de compilação
+        run: npm install --no-save --no-audit --no-fund esbuild@0.25.10 postject@1.0.0-alpha.6
+
+      - name: Gerar o .exe
+        run: node tools/build-exe.mjs
+
+      - name: Montar a pasta para distribuir
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/Quiz-da-Live | Out-Null
+          Copy-Item build/Quiz-da-Live.exe dist/Quiz-da-Live/
+          Copy-Item LEIA-ME.txt dist/Quiz-da-Live/
+          Compress-Archive -Path dist/Quiz-da-Live -DestinationPath Quiz-da-Live-Windows.zip
+
+      - name: Guardar o resultado (baixe na aba Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Quiz-da-Live-Windows
+          path: Quiz-da-Live-Windows.zip
+
+      - name: Publicar na página de downloads (só quando for uma versão v1.0.0 etc.)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Quiz-da-Live-Windows.zip
