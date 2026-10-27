@@ -1,0 +1,17 @@
+{
+  "name": "quiz-da-live-tiktok",
+  "version": "1.0.0",
+  "description": "Quiz ao vivo que lê o chat do TikTok e conta os acertos automaticamente",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "demo": "node server.mjs --demo"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "2.4.4"
+  }
+}

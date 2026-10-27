@@ -1,0 +1,1420 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz da Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: palco vertical 9:16 (o que vai para a live) ao lado de um painel de apresentador.
+   As quatro cores das respostas A B C D são o motivo visual do quiz inteiro. */
+:root {
+  --bg: #11154A;
+  --panel: #1A2068;
+  --panel-2: #232B8C;
+  --field: #0C0F3D;
+  --line: rgba(255, 255, 255, 0.16);
+  --text: #F7F5FF;
+  --muted: #B3B8EE;
+  --ink: #0E1140;
+  --a: #FF5C61;
+  --b: #FFC83D;
+  --c: #38D9A4;
+  --d: #4FC1FF;
+  --cta: #FFC83D;
+  --display: "Bowlby One", "Arial Black", Impact, sans-serif;
+  --body: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 18px 16px 40px;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--b); outline-offset: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 22px; }
+.logo { font-family: var(--display); font-size: 26px; line-height: 1.1; margin: 0; font-weight: 400; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 64ch; }
+
+.grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start; }
+.stagecol { width: min(420px, calc((100vh - 170px) * 0.5625)); min-width: min(100%, 300px); max-width: 100%; display: grid; gap: 12px; }
+
+/* ---------- Palco ---------- */
+.stage {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; border: 0; }
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); height: 1.8cqw; flex: none; }
+.strip i:nth-child(1) { background: var(--a); }
+.strip i:nth-child(2) { background: var(--b); }
+.strip i:nth-child(3) { background: var(--c); }
+.strip i:nth-child(4) { background: var(--d); }
+.scene { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4cqw; padding: 5cqw 6cqw 5cqw; }
+
+.kicker { margin: 0; font-size: 3.3cqw; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 3cqw; flex: none; }
+.head .count { font-size: 5cqw; font-weight: 800; margin: 0.6cqw 0 0; }
+
+.ring { position: relative; width: 17cqw; height: 17cqw; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring .track { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 6; }
+.ring .prog { fill: none; stroke: var(--b); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 163.36; stroke-dashoffset: 0; }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 7cqw; }
+.ring.urgent .prog { stroke: var(--a); }
+.ring.urgent .num { color: var(--a); }
+@media (prefers-reduced-motion: no-preference) {
+  .ring.urgent { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+}
+.answer-pill { background: var(--b); color: var(--ink); border-radius: 99px; padding: 1.6cqw 4cqw; font-weight: 800; font-size: 4cqw; white-space: nowrap; }
+
+.qwrap { flex: 1; min-height: 0; display: flex; align-items: center; }
+.q { margin: 0; font-weight: 800; font-size: 7.4cqw; line-height: 1.12; text-wrap: balance; }
+.q.long { font-size: 6cqw; }
+
+.opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.6cqw; flex: none; }
+.opt {
+  --oc: var(--a);
+  display: grid; grid-template-columns: 11.5cqw minmax(0, 1fr) auto; align-items: center; gap: 3.4cqw;
+  padding: 2.2cqw 3cqw 2.2cqw 2.2cqw;
+  background: var(--panel-2);
+  border: 0.4cqw solid var(--line);
+  border-radius: 3.4cqw;
+  font-size: 5cqw; font-weight: 600; line-height: 1.2;
+  transition: opacity 0.25s, transform 0.25s, background 0.25s;
+}
+.opt:nth-child(2) { --oc: var(--b); }
+.opt:nth-child(3) { --oc: var(--c); }
+.opt:nth-child(4) { --oc: var(--d); }
+.opt .chip { width: 11.5cqw; height: 11.5cqw; border-radius: 2.6cqw; display: grid; place-items: center; background: var(--oc); color: var(--ink); font-family: var(--display); font-size: 6cqw; }
+.opt .txt { overflow-wrap: anywhere; }
+.opt .tag { font-size: 3.4cqw; font-weight: 800; letter-spacing: 0.04em; text-align: right; line-height: 1.15; }
+.opt.correct { background: var(--oc); color: var(--ink); border-color: var(--oc); transform: scale(1.025); font-weight: 800; }
+.opt.correct .chip { background: var(--ink); color: var(--oc); }
+.opt.dim { opacity: 0.4; }
+
+.foot { flex: none; text-align: center; font-size: 4cqw; color: var(--muted); min-height: 11cqw; display: grid; align-content: center; gap: 1.6cqw; }
+.foot strong { color: var(--text); }
+.award { background: var(--b); color: var(--ink); border-radius: 3.4cqw; padding: 2.4cqw 3.6cqw; font-weight: 800; font-size: 5cqw; }
+.timeup { color: var(--a); font-weight: 800; font-size: 5cqw; }
+.fast { font-size: 3.8cqw; color: var(--text); }
+
+.intro { justify-content: center; text-align: center; align-items: center; gap: 5cqw; }
+.intro .big { font-family: var(--display); font-weight: 400; font-size: 15cqw; line-height: 1; margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
+.intro p { margin: 0; }
+.intro .meta { font-size: 4.6cqw; color: var(--muted); font-weight: 600; }
+.howto { display: grid; gap: 2.6cqw; justify-items: center; font-size: 4.4cqw; font-weight: 600; }
+.letters { display: flex; gap: 2.6cqw; }
+.letters span { width: 13cqw; height: 13cqw; border-radius: 3cqw; display: grid; place-items: center; font-family: var(--display); font-size: 7cqw; color: var(--ink); }
+.letters span:nth-child(1) { background: var(--a); }
+.letters span:nth-child(2) { background: var(--b); }
+.letters span:nth-child(3) { background: var(--c); }
+.letters span:nth-child(4) { background: var(--d); }
+
+.boardscene { justify-content: center; gap: 5cqw; }
+.boardscene h2 { margin: 0.6cqw 0 0; font-family: var(--display); font-weight: 400; font-size: 14cqw; line-height: 1; }
+.top { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.4cqw; }
+.top li { display: grid; grid-template-columns: 11.5cqw minmax(0, 1fr) auto; gap: 3.4cqw; align-items: center; background: var(--panel-2); border-radius: 3.4cqw; padding: 2.2cqw 3.6cqw 2.2cqw 2.2cqw; font-size: 5cqw; font-weight: 700; }
+.top .rk { width: 11.5cqw; height: 11.5cqw; border-radius: 2.6cqw; display: grid; place-items: center; font-family: var(--display); font-size: 6cqw; background: rgba(255, 255, 255, 0.14); color: var(--text); }
+.top li:nth-child(1) .rk { background: var(--b); color: var(--ink); }
+.top li:nth-child(2) .rk { background: var(--d); color: var(--ink); }
+.top li:nth-child(3) .rk { background: var(--a); color: var(--ink); }
+.top .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top .sc { text-align: right; font-size: 3.4cqw; color: var(--muted); line-height: 1.2; font-weight: 600; }
+.top .sc b { display: block; color: var(--text); font-size: 5cqw; font-weight: 800; }
+.nobody { margin: 0; color: var(--muted); font-size: 5cqw; font-weight: 600; text-align: center; padding: 8cqw 0; }
+.champ { margin: 0; font-family: var(--display); font-size: 9.5cqw; line-height: 1.1; color: var(--b); overflow-wrap: anywhere; }
+
+.overlay { position: absolute; inset: 0; background: rgba(17, 21, 74, 0.96); display: grid; align-content: center; justify-items: center; gap: 4cqw; padding: 8cqw; text-align: center; cursor: pointer; }
+.overlay[hidden] { display: none; }
+.overlay .winner { margin: 0; font-family: var(--display); font-size: 9.5cqw; line-height: 1.1; overflow-wrap: anywhere; color: var(--text); }
+.overlay .winner.done { color: var(--b); font-size: 11cqw; }
+.overlay .hint { margin: 0; color: var(--muted); font-size: 3.6cqw; }
+
+/* ---------- Controles ---------- */
+.primary { width: 100%; border: 0; border-radius: 14px; padding: 15px 16px; background: var(--cta); color: var(--ink); font-weight: 800; font-size: 18px; }
+.primary:hover:not(:disabled) { filter: brightness(1.06); }
+.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.row2 { display: flex; flex-wrap: wrap; gap: 8px; }
+.ghost { flex: 1 1 auto; border: 1px solid var(--line); background: transparent; border-radius: 10px; padding: 9px 12px; font-weight: 600; font-size: 14px; }
+.ghost:hover { background: rgba(255, 255, 255, 0.08); }
+.kbd { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* ---------- Painel ---------- */
+.side { display: grid; gap: 0; min-width: 0; }
+.blk { padding: 18px 0; border-top: 1px solid var(--line); min-width: 0; }
+.blk:first-child { border-top: 0; padding-top: 0; }
+.blk h2, details > summary { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.blk-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.field { display: grid; gap: 6px; margin-top: 12px; min-width: 0; }
+.field label { font-size: 13px; font-weight: 600; }
+input[type="text"], select, textarea {
+  width: 100%; min-width: 0; background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text);
+}
+textarea { resize: vertical; min-height: 64px; }
+.solid { border: 0; border-radius: 10px; padding: 11px 14px; font-weight: 800; background: var(--c); color: var(--ink); flex: 1 1 auto; }
+.msg { margin: 10px 0 0; min-height: 1.4em; color: var(--muted); font-size: 14px; }
+.small { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.small:hover { background: rgba(255, 255, 255, 0.08); }
+.small.warn { border-color: var(--a); color: var(--a); }
+
+.pill { border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 800; background: rgba(255, 255, 255, 0.14); color: var(--text); }
+.pill.connected { background: var(--c); color: var(--ink); }
+.pill.demo { background: var(--d); color: var(--ink); }
+.pill.connecting { background: var(--b); color: var(--ink); }
+.pill.error { background: var(--a); color: var(--ink); }
+
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.feed li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.feed .fl { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-family: var(--display); font-size: 12px; color: var(--ink); background: rgba(255, 255, 255, 0.12); align-self: center; }
+.feed .fl.l-A { background: var(--a); }
+.feed .fl.l-B { background: var(--b); }
+.feed .fl.l-C { background: var(--c); }
+.feed .fl.l-D { background: var(--d); }
+.feed .ft { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.feed .ft b { color: var(--text); font-weight: 600; margin-right: 6px; }
+.empty { color: var(--muted); margin: 0; }
+
+.sidetop { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sidetop li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 12px; background: var(--panel); border-radius: 10px; }
+.sidetop .rk { font-family: var(--display); color: var(--muted); font-size: 14px; text-align: center; }
+.sidetop li:nth-child(1) .rk { color: var(--b); }
+.sidetop .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.sidetop .sc { text-align: right; font-size: 12px; color: var(--muted); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.sidetop .sc b { display: block; color: var(--text); font-size: 15px; font-weight: 800; }
+
+details { padding: 16px 0; border-top: 1px solid var(--line); }
+details > summary { cursor: pointer; list-style-position: inside; }
+details[open] > summary { margin-bottom: 4px; }
+.qe { margin-top: 14px; padding: 14px; background: var(--panel); border-radius: 12px; display: grid; gap: 10px; min-width: 0; }
+.qe-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.qe-top b { font-weight: 800; }
+.qopt { display: grid; grid-template-columns: auto 28px minmax(0, 1fr); gap: 8px; align-items: center; }
+.qopt .lt { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-family: var(--display); font-size: 13px; color: var(--ink); }
+.qopt.o0 .lt { background: var(--a); }
+.qopt.o1 .lt { background: var(--b); }
+.qopt.o2 .lt { background: var(--c); }
+.qopt.o3 .lt { background: var(--d); }
+.qopt input[type="radio"] { width: 18px; height: 18px; accent-color: var(--b); margin: 0; }
+.catrow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 10px; }
+.legend { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.setrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-weight: 600; }
+.check input { width: 18px; height: 18px; accent-color: var(--b); }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .stagecol { width: min(100%, 440px); margin-inline: auto; }
+}
+
+/* Janela só com o palco (endereço /?palco): ocupa a janela inteira, sempre em pé (9:16), sem painel. */
+body.palco { padding: 0; overflow: hidden; cursor: none; }
+body.palco .wrap { display: block; max-width: none; margin: 0; }
+body.palco .grid { display: block; }
+body.palco .wrap > header, body.palco .side, body.palco .stagecol > div:last-child { display: none !important; }
+body.palco .stagecol { position: fixed; inset: 0; width: auto; min-width: 0; max-width: none; margin: 0; display: grid; place-items: center; }
+body.palco .stage { width: min(100vw, calc(100vh * 0.5625)); border: 0; border-radius: 0; }
+body.palco .overlay .hint { display: none; }
+body.palco .ring .prog { transition: stroke-dashoffset 0.15s linear; }
+
+/* ===== visual v2: mais cor, brilho, avatares e mini-games ===== */
+body {
+  background:
+    radial-gradient(1000px 560px at 8% -8%, rgba(255, 92, 97, 0.22), transparent 60%),
+    radial-gradient(900px 560px at 100% 6%, rgba(79, 193, 255, 0.2), transparent 58%),
+    radial-gradient(900px 600px at 50% 112%, rgba(56, 217, 164, 0.16), transparent 60%),
+    #0D1040;
+  background-attachment: fixed;
+}
+.logo { background: linear-gradient(90deg, var(--a), var(--b) 35%, var(--c) 68%, var(--d)); -webkit-background-clip: text; background-clip: text; color: transparent; width: fit-content; }
+.stage {
+  background:
+    radial-gradient(90% 42% at 0% 0%, rgba(255, 92, 97, 0.4), transparent 62%),
+    radial-gradient(80% 38% at 100% 8%, rgba(79, 193, 255, 0.36), transparent 60%),
+    radial-gradient(90% 44% at 50% 108%, rgba(56, 217, 164, 0.3), transparent 62%),
+    linear-gradient(180deg, #1C2294 0%, #0F1354 100%);
+  border: 0;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.stage::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.9;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 0.18cqw, transparent 0.3cqw);
+  background-size: 4.2cqw 4.2cqw;
+}
+.strip { height: 2.2cqw; position: relative; z-index: 2; box-shadow: 0 0.6cqw 3cqw rgba(255, 255, 255, 0.18); }
+.scene { position: relative; z-index: 1; }
+.kicker { text-shadow: 0 0.3cqw 1cqw rgba(0, 0, 0, 0.35); }
+
+.qwrap {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  border: 0.35cqw solid rgba(255, 255, 255, 0.18);
+  border-radius: 5cqw; padding: 3.6cqw 4.4cqw;
+  box-shadow: 0 1.1cqw 0 rgba(0, 0, 0, 0.25);
+}
+.q { font-size: 7cqw; text-shadow: 0 0.4cqw 0 rgba(0, 0, 0, 0.25); }
+.q.long { font-size: 5.7cqw; }
+.scene.rev .q { font-size: 5.6cqw; }
+.scene.rev .q.long { font-size: 4.8cqw; }
+.scene.rev { gap: 3cqw; }
+
+.opts { gap: 5cqw; }
+.opt {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.07));
+  border: 0.35cqw solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 1cqw 0 rgba(0, 0, 0, 0.3);
+  padding: 2cqw 3cqw 3.4cqw 2.2cqw;
+}
+.opt > * { position: relative; z-index: 1; }
+.opt > .fill { position: absolute; z-index: 0; left: 0; top: 0; bottom: 0; width: var(--p, 0%); background: var(--oc); opacity: 0.3; border-radius: inherit; transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.opt > .vt { position: absolute; z-index: 3; left: 16.5cqw; bottom: -4.2cqw; display: flex; align-items: center; pointer-events: none; }
+.opt .chip { box-shadow: inset 0 -0.9cqw 0 rgba(0, 0, 0, 0.2), 0 0 4cqw -0.4cqw var(--oc); }
+.opt.correct { background: var(--oc); border-color: rgba(255, 255, 255, 0.7); box-shadow: 0 0 7cqw -1cqw var(--oc), 0 1cqw 0 rgba(0, 0, 0, 0.3); }
+.opt.correct > .fill { display: none; }
+.opt.dim { opacity: 1; }
+.opt.dim > :not(.vt):not(.fill) { opacity: 0.5; }
+
+.av {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  width: 7.2cqw; height: 7.2cqw; margin-right: -1.9cqw; border-radius: 50%;
+  background: hsl(var(--h, 200) 66% 46%); color: #fff; font: 800 3.6cqw/1 var(--body); font-style: normal;
+  border: 0.5cqw solid #12165A; box-shadow: 0 0.5cqw 1.2cqw rgba(0, 0, 0, 0.4);
+}
+.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vt .more { margin-left: 2.4cqw; padding: 0.5cqw 1.8cqw; border-radius: 99px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 3.2cqw; font-weight: 800; }
+
+.badge { display: inline-flex; align-items: center; gap: 1.2cqw; margin-top: 1.4cqw; padding: 0.9cqw 2.8cqw; border-radius: 99px; background: var(--b); color: var(--ink); font-size: 3.1cqw; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; box-shadow: 0 0 4cqw -0.5cqw var(--b); }
+.badge.b-blitz { background: var(--a); box-shadow: 0 0 4cqw -0.5cqw var(--a); }
+.badge.b-poll { background: var(--d); box-shadow: 0 0 4cqw -0.5cqw var(--d); }
+
+.foot { gap: 1.4cqw; }
+.award { font-size: 4.6cqw; padding: 2cqw 3.4cqw; box-shadow: 0 0.9cqw 0 rgba(0, 0, 0, 0.25); }
+.tip { background: rgba(0, 0, 0, 0.3); border: 0.35cqw dashed rgba(255, 255, 255, 0.34); border-radius: 3.4cqw; padding: 2cqw 3cqw; font-size: 3.5cqw; line-height: 1.3; color: var(--text); text-align: center; }
+.tip b { color: var(--b); font-weight: 800; }
+.tip small { display: block; margin-top: 0.6cqw; color: var(--muted); font-size: 3.1cqw; }
+.ring .prog { filter: drop-shadow(0 0 1.4cqw rgba(255, 200, 61, 0.7)); }
+.ring.urgent .prog { filter: drop-shadow(0 0 1.6cqw rgba(255, 92, 97, 0.85)); }
+
+.top li { background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.07)); border: 0.3cqw solid rgba(255, 255, 255, 0.16); box-shadow: 0 0.8cqw 0 rgba(0, 0, 0, 0.25); }
+.top li:nth-child(1) { background: linear-gradient(90deg, rgba(255, 200, 61, 0.38), rgba(255, 255, 255, 0.08)); border-color: rgba(255, 200, 61, 0.8); box-shadow: 0 0 6cqw -1cqw var(--b), 0 0.8cqw 0 rgba(0, 0, 0, 0.25); }
+.champ { text-shadow: 0 0 5cqw rgba(255, 200, 61, 0.6); }
+
+.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; }
+.confetti i { position: absolute; top: -5cqw; left: var(--x); width: 2cqw; height: 3.6cqw; background: var(--c); border-radius: 0.5cqw; opacity: 0.95; transform: rotate(var(--r)); }
+.confetti i:nth-child(4n+1) { background: var(--a); }
+.confetti i:nth-child(4n+2) { background: var(--b); }
+.confetti i:nth-child(4n+3) { background: var(--d); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .av { animation: pop 0.4s cubic-bezier(0.3, 1.7, 0.5, 1) both; }
+  @keyframes pop { from { transform: scale(0) translateY(3cqw); opacity: 0; } to { transform: none; opacity: 1; } }
+  .badge { animation: badge 1.6s ease-in-out infinite; }
+  @keyframes badge { 50% { transform: scale(1.07); } }
+  .letters span { animation: bob 1.8s ease-in-out infinite; }
+  .letters span:nth-child(2) { animation-delay: 0.15s; }
+  .letters span:nth-child(3) { animation-delay: 0.3s; }
+  .letters span:nth-child(4) { animation-delay: 0.45s; }
+  @keyframes bob { 50% { transform: translateY(-1.6cqw); } }
+  .opt.correct { animation: win 0.7s ease-out; }
+  @keyframes win { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1.025); } }
+  .opt > .fill { animation: grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes grow { from { width: 0; } }
+  .confetti i { animation: fall var(--d) linear both; }
+  @keyframes fall { to { transform: translateY(190cqw) rotate(calc(var(--r) + 540deg)); opacity: 0.9; } }
+  .stage::before { animation: drift 24s linear infinite; }
+  @keyframes drift { to { background-position: 4.2cqw 4.2cqw; } }
+}
+
+/* painel */
+.side { gap: 14px; }
+.blk, details { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+.blk:first-child { border-top: 1px solid var(--line); padding-top: 18px; }
+.primary { background: linear-gradient(180deg, #FFDB62, #FFB81F); border-radius: 16px; box-shadow: 0 5px 0 #A86F00, 0 12px 26px rgba(255, 184, 31, 0.28); transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
+.primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #A86F00, 0 6px 14px rgba(255, 184, 31, 0.25); }
+.ghost { background: rgba(255, 255, 255, 0.05); }
+.solid { box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); }
+.sidetop li { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line); }
+.sidetop li:nth-child(1) { border-color: rgba(255, 200, 61, 0.7); background: rgba(255, 200, 61, 0.12); }
+body.palco { background: #0D1040; }
+body.palco .stage { box-shadow: none; }
+
+/* ===== guia "Como o jogo funciona" ===== */
+.helpbtn { margin-top: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08); border-radius: 99px; padding: 8px 16px; font-weight: 700; font-size: 14px; }
+.helpbtn:hover { background: rgba(255, 255, 255, 0.15); }
+dialog.guide { width: min(760px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 1px solid var(--line); border-radius: 22px; background: #171B6E; color: var(--text); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6); overflow: hidden; }
+dialog.guide[open] { display: flex; flex-direction: column; }
+dialog.guide::backdrop { background: rgba(5, 7, 30, 0.75); }
+.guide-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(255, 92, 97, 0.25), rgba(79, 193, 255, 0.2)); }
+.guide-top h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 20px; }
+.guide-body { overflow: auto; padding: 8px 22px 24px; }
+.guide-body section { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.guide-body section:last-child { border-bottom: 0; }
+.guide-body h3 { margin: 0 0 8px; font-size: 17px; }
+.guide-body p, .guide-body li { color: #DDE0FF; }
+.guide-body p { margin: 8px 0; }
+.guide-body ol, .guide-body ul { margin: 8px 0; padding-left: 22px; display: grid; gap: 6px; }
+.guide-body b { color: var(--text); }
+.guide-body .ex { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.guide-body .ex span { padding: 5px 12px; border-radius: 99px; font-weight: 700; font-size: 14px; }
+.guide-body .ex .ok { background: rgba(56, 217, 164, 0.2); border: 1px solid var(--c); }
+.guide-body .ex .no { background: rgba(255, 92, 97, 0.18); border: 1px solid var(--a); text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.5); }
+.guide-body .callout { background: rgba(255, 200, 61, 0.12); border: 1px solid rgba(255, 200, 61, 0.55); border-radius: 12px; padding: 10px 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="logo">Quiz da Live</h1>
+    <p class="sub">O jogo lê o chat da sua live no TikTok, conta quem acertou e mostra o Top 5 no palco. Mostre o palco na live e deixe o modo automático rodando.</p>
+    <button class="helpbtn" id="btn-guide" type="button">❓ Como o jogo funciona</button>
+  </header>
+
+  <dialog class="guide" id="guide" aria-labelledby="guide-h">
+    <div class="guide-top"><h2 id="guide-h">Como o jogo funciona</h2><button class="small" id="guide-close" type="button">Fechar</button></div>
+    <div class="guide-body">
+      <section>
+        <h3>O que é</h3>
+        <p>Um quiz para a sua live no TikTok. Você mostra uma pergunta com quatro alternativas (A, B, C e D). O público responde <b>comentando a letra no chat</b>. O jogo lê os comentários sozinho, conta quem acertou e mostra o <b>Top 5</b> de quem mais acertou. Cada pessoa que responde aparece num círculo na alternativa que escolheu.</p>
+      </section>
+      <section>
+        <h3>Como começar, em 4 passos</h3>
+        <ol>
+          <li><b>Comece sua live</b> no TikTok. O jogo só lê o chat quando você está ao vivo.</li>
+          <li>Aqui no jogo, digite seu @ em <b>Usuário que está ao vivo</b> e clique em <b>Conectar ao chat</b>. Espere o aviso ficar verde, escrito <b>Conectado</b>.</li>
+          <li><b>Mostre o jogo na live:</b> clique em <b>Abrir janela do palco</b>. Abre uma janela em pé, no formato de celular. No TikTok LIVE Studio ou no OBS, adicione essa janela como fonte (captura de janela). Não minimize a janela do palco.</li>
+          <li>Clique em <b>Lançar pergunta 1</b>. No modo automático, o resto roda sozinho: tempo, resposta, Top 5 e próxima pergunta.</li>
+        </ol>
+        <p class="callout"><b>Quer só testar?</b> Clique em <b>Testar com demonstração</b>. Espectadores de mentira respondem no chat e você vê o jogo funcionando, sem precisar estar ao vivo.</p>
+      </section>
+      <section>
+        <h3>Como o público joga</h3>
+        <p>É só comentar <b>a letra</b> da alternativa escolhida. Só a <b>primeira resposta</b> de cada pessoa conta em cada pergunta.</p>
+        <div class="ex"><span class="ok">A</span><span class="ok">b</span><span class="ok">C!</span><span class="ok">letra d</span><span class="no">Reels</span><span class="no">acho que é a B</span></div>
+        <p>Escrever a resposta inteira ou uma frase <b>não vale</b>. Por isso o jogo lembra isso na tela, depois de cada pergunta.</p>
+      </section>
+      <section>
+        <h3>Pontos e Top 5</h3>
+        <ul>
+          <li>Quem acerta ganha <b>1 acerto</b> (ou 2, nas perguntas especiais).</li>
+          <li>O Top 5 é ordenado por <b>número de acertos</b>. Em caso de empate, ganha quem respondeu <b>mais rápido</b> no total.</li>
+          <li>O placar aparece no palco depois de cada pergunta e fica salvo neste computador.</li>
+          <li>O botão <b>Sortear entre quem acertou</b> sorteia alguém do ranking, com animação no palco.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Mini-games</h3>
+        <ul>
+          <li>⭐ <b>Vale dobro:</b> a cada 5 perguntas, quem acerta ganha 2 acertos.</li>
+          <li>⚡ <b>Relâmpago:</b> a cada 10 perguntas, metade do tempo e também vale 2 acertos.</li>
+          <li>📊 <b>Enquete da plateia:</b> a cada 10 perguntas, uma votação sem pontos, só para o chat se divertir.</li>
+        </ul>
+        <p>Dá para desligar em <b>Ajustes</b>.</p>
+      </section>
+      <section>
+        <h3>As perguntas</h3>
+        <p>O jogo vem com mais de 100 perguntas sobre redes sociais, internet, música, cinema, esportes, games e tecnologia, de fáceis a difíceis. Cada rodada sorteia as perguntas, começa fácil e não repete as que já saíram. Em <b>Perguntas</b> você pode editar, apagar e criar as suas.</p>
+      </section>
+      <section>
+        <h3>Automático e piloto automático</h3>
+        <ul>
+          <li><b>Modo automático:</b> o jogo avança sozinho entre as perguntas. Você só lança a primeira.</li>
+          <li><b>Live no piloto automático:</b> quando a rodada acaba, mostra o campeão, zera o placar e começa outra rodada sozinho, sem parar. Ligue em <b>Ajustes</b>.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Ajustes que ajudam</h3>
+        <ul>
+          <li><b>Tempo por pergunta:</b> de 10 a 45 segundos.</li>
+          <li><b>Atraso da live:</b> a live chega ao público com alguns segundos de atraso. Esse tempo extra, depois que o relógio zera, ainda aceita respostas. Se estiver perdendo respostas, aumente.</li>
+          <li><b>Perguntas por rodada:</b> de 10 a todas.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Se algo não funcionar</h3>
+        <ul>
+          <li><b>Não conta as respostas:</b> veja o painel <b>Chat ao vivo</b>. Se os comentários aparecem lá, o chat está chegando. Confira se você clicou em <b>Lançar pergunta</b>: só conta com uma pergunta no ar.</li>
+          <li><b>Não conecta:</b> confira se a live está mesmo no ar (abra tiktok.com/@seuusuario/live), se o @ está certo, e tente desligar VPN. Espere um minuto e tente de novo.</li>
+          <li><b>O jogo parou de ler o chat:</b> a leitura usa uma biblioteca não oficial, que pode quebrar quando o TikTok muda algo. Veja se há uma versão nova do jogo.</li>
+          <li>Use o <b>Plano B: acerto manual</b> se o chat cair no meio da live.</li>
+        </ul>
+        <p>Importante: o jogo roda no seu computador. Deixe a janela preta (do programa) aberta enquanto joga. Para encerrar, feche essa janela.</p>
+      </section>
+    </div>
+  </dialog>
+
+  <main class="grid">
+    <section class="stagecol" aria-label="Palco do quiz">
+      <div class="stage" id="stage">
+        <div class="strip" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="scene" id="scene"></div>
+        <div class="overlay" id="overlay" hidden></div>
+      </div>
+      <div style="display:grid;gap:10px">
+        <button class="primary" id="primary" type="button"></button>
+        <div class="row2">
+          <button class="ghost" id="btn-restart" type="button">Voltar ao início</button>
+          <button class="ghost" id="btn-end" type="button">Encerrar quiz</button>
+          <button class="ghost" id="btn-palco" type="button">Abrir janela do palco</button>
+          <button class="ghost" id="btn-full" type="button" hidden>Tela cheia</button>
+        </div>
+        <p class="kbd">A barra de espaço faz o mesmo que o botão grande.</p>
+        <p class="kbd">Para a live, capture a janela do palco. No OBS, também dá para usar o endereço <strong id="palco-url">/?palco</strong> como fonte de navegador.</p>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="blk" aria-labelledby="h-conn">
+        <div class="blk-head">
+          <h2 id="h-conn">Conexão com o TikTok</h2>
+          <span class="pill" id="pill">Sem servidor</span>
+        </div>
+        <form id="conn-form" autocomplete="off">
+          <div class="field" style="margin-top:0">
+            <label for="tt-user">Usuário que está ao vivo</label>
+            <input type="text" id="tt-user" placeholder="@seuusuario" autocapitalize="off" autocorrect="off" spellcheck="false">
+          </div>
+          <div class="row2" style="margin-top:12px">
+            <button class="solid" id="tt-connect" type="submit">Conectar ao chat</button>
+            <button class="ghost" id="tt-demo" type="button">Testar com demonstração</button>
+          </div>
+        </form>
+        <p class="msg" id="conn-msg" role="status"></p>
+      </section>
+
+      <section class="blk" aria-labelledby="h-top">
+        <div class="blk-head">
+          <h2 id="h-top">Top 5 de acertos</h2>
+          <button class="small" id="btn-draw" type="button">Sortear entre quem acertou</button>
+        </div>
+        <ol class="sidetop" id="sidetop"></ol>
+        <p class="empty" id="top-empty">Ninguém acertou ainda. Os acertos entram aqui sozinhos quando cada resposta é revelada.</p>
+      </section>
+
+      <section class="blk" aria-labelledby="h-feed">
+        <div class="blk-head"><h2 id="h-feed">Chat ao vivo</h2></div>
+        <p class="empty" id="feed-stat">Comentários recebidos: 0 · Respostas contadas nesta pergunta: 0</p>
+        <ol class="feed" id="feed"></ol>
+        <p class="empty" id="feed-empty">Os comentários da live aparecem aqui. A letra colorida marca as respostas que foram contadas.</p>
+      </section>
+
+      <details id="det-q">
+        <summary>Perguntas (<span id="qcount">0</span>)</summary>
+        <p class="legend">Marque a bolinha ao lado da resposta certa. Perguntas incompletas ficam de fora do quiz.</p>
+        <div id="editor"></div>
+        <div class="row2" style="margin-top:14px">
+          <button class="small" id="q-add" type="button">Adicionar pergunta</button>
+          <button class="small" id="q-reset" type="button">Restaurar exemplos</button>
+        </div>
+      </details>
+
+      <details id="det-s">
+        <summary>Ajustes</summary>
+        <label class="check" for="s-auto"><input type="checkbox" id="s-auto"> Modo automático (avança sozinho)</label>
+        <p class="legend">No automático, depois do tempo a resposta é revelada, o Top 5 aparece e a próxima pergunta começa sozinha. Você só lança a primeira.</p>
+        <label class="check" for="s-mini"><input type="checkbox" id="s-mini"> Mini-games (rodada relâmpago, vale dobro e enquete)</label>
+        <p class="legend">A cada 5 perguntas vem uma especial: <b>vale dobro</b> (2 acertos) ou <b>relâmpago</b> (metade do tempo, 2 acertos). A cada 10 perguntas entra uma <b>enquete da plateia</b>, sem pontos, só para o chat votar e se divertir.</p>
+        <label class="check" for="s-loop"><input type="checkbox" id="s-loop"> Live no piloto automático (recomeça sozinha)</label>
+        <p class="legend">Quando a rodada acaba, o campeão aparece por alguns segundos. Depois o placar é zerado, as perguntas são sorteadas de novo e a próxima rodada começa sozinha, sem parar. Precisa do modo automático ligado.</p>
+        <div class="setrow" style="margin-top:12px">
+          <div class="field">
+            <label for="s-loopwait">Mostrar o campeão por</label>
+            <select id="s-loopwait">
+              <option value="10">10 segundos</option>
+              <option value="20">20 segundos</option>
+              <option value="30">30 segundos</option>
+              <option value="60">60 segundos</option>
+            </select>
+          </div>
+        </div>
+        <div class="setrow" style="margin-top:12px">
+          <div class="field">
+            <label for="s-live">Nome da live</label>
+            <input type="text" id="s-live" maxlength="40">
+          </div>
+          <div class="field">
+            <label for="s-delay">Atraso da live (aceita respostas depois do tempo)</label>
+            <select id="s-delay">
+              <option value="2">2 segundos</option>
+              <option value="5">5 segundos</option>
+              <option value="8">8 segundos</option>
+              <option value="12">12 segundos</option>
+              <option value="15">15 segundos</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="s-secs">Tempo por pergunta</label>
+            <select id="s-secs">
+              <option value="10">10 segundos</option>
+              <option value="15">15 segundos</option>
+              <option value="20">20 segundos</option>
+              <option value="30">30 segundos</option>
+              <option value="45">45 segundos</option>
+            </select>
+          </div>
+        </div>
+        <div class="setrow" style="margin-top:12px">
+          <div class="field">
+            <label for="s-per">Perguntas por rodada</label>
+            <select id="s-per">
+              <option value="10">10 perguntas</option>
+              <option value="15">15 perguntas</option>
+              <option value="20">20 perguntas</option>
+              <option value="30">30 perguntas</option>
+              <option value="0">Todas</option>
+            </select>
+          </div>
+        </div>
+        <label class="check" for="s-mix"><input type="checkbox" id="s-mix"> Sortear e misturar temas e dificuldades</label>
+        <label class="check" for="s-sound"><input type="checkbox" id="s-sound"> Tocar sons</label>
+        <div class="row2" style="margin-top:14px">
+          <button class="small" id="s-clear" type="button">Zerar placar</button>
+        </div>
+      </details>
+
+      <details id="det-m">
+        <summary>Plano B: acerto manual</summary>
+        <p class="legend">Se o chat cair no meio da live, conte um acerto à mão.</p>
+        <form id="manual" autocomplete="off">
+          <div class="field">
+            <label for="m-user">Usuário que acertou</label>
+            <input type="text" id="m-user" placeholder="@usuario" autocapitalize="off" autocorrect="off">
+          </div>
+          <div class="row2" style="margin-top:12px"><button class="solid" type="submit">Contar um acerto</button></div>
+        </form>
+      </details>
+    </aside>
+  </main>
+</div>
+
+<script src="logic.js"></script>
+<script>
+(function () {
+  /* Relógios que não dormem: o navegador atrasa os timers de janelas minimizadas ou escondidas.
+     Os timers abaixo rodam num Worker, que não sofre esse atraso. */
+  var nid = 1, cbs = {}, TW = null;
+  try {
+    TW = new Worker(URL.createObjectURL(new Blob(['var t={};onmessage=function(e){var d=e.data;if(d.c){clearTimeout(t[d.id]);clearInterval(t[d.id]);delete t[d.id];return}var f=function(){postMessage(d.id)};if(d.i)t[d.id]=setInterval(f,d.ms);else t[d.id]=setTimeout(function(){delete t[d.id];f()},d.ms)}'], { type: 'text/javascript' })));
+    TW.onmessage = function (e) {
+      var c = cbs[e.data];
+      if (!c) return;
+      if (c.once) delete cbs[e.data];
+      try { c.fn(); } catch (x) { if (window.console) console.error(x); }
+    };
+  } catch (x) { TW = null; }
+  function wset(fn, ms, rep) {
+    if (!TW) return rep ? window.setInterval(fn, ms) : window.setTimeout(fn, ms);
+    var id = nid++; cbs[id] = { fn: fn, once: !rep }; TW.postMessage({ id: id, ms: ms, i: rep ? 1 : 0 }); return id;
+  }
+  function wclear(id) {
+    if (id == null) return;
+    if (!TW) { window.clearTimeout(id); return; }
+    if (cbs[id]) { delete cbs[id]; TW.postMessage({ c: 1, id: id }); }
+  }
+  function setTimeout(fn, ms) { return wset(fn, ms, false); }
+  function setInterval(fn, ms) { return wset(fn, ms, true); }
+  function clearTimeout(id) { wclear(id); }
+  function clearInterval(id) { wclear(id); }
+  function raf(fn) { return document.hidden ? setTimeout(fn, 50) : window.requestAnimationFrame(fn); }
+  // Janela só com o palco: não roda o jogo, apenas mostra o que o painel envia pelo servidor.
+  if (/[?&]palco\b/.test(location.search)) { palcoMode(); return; }
+  // Círculo do usuário (foto do TikTok quando houver, senão a inicial do nome).
+  function avHtml(name, url) {
+    var nm = String(name || '?').replace(/^@+/, '').trim() || '?';
+    var h = 0, k;
+    for (k = 0; k < nm.length; k++) h = (h * 31 + nm.charCodeAt(k)) % 360;
+    var ini = (Array.from(nm)[0] || '?').toUpperCase();
+    var img = url && /^https:\/\//i.test(url) ? '<img src="' + esc(url) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+    return '<i class="av" style="--h:' + h + '" title="' + esc(nm) + '">' + esc(ini) + img + '</i>';
+  }
+  // Coloca no palco os votos que acabaram de chegar: um círculo por pessoa, no cartão da alternativa escolhida.
+  function addVotes(root, list) {
+    var MAX = 10;
+    list.forEach(function (v) {
+      var box = root.querySelector('.vt[data-i="' + v.i + '"]');
+      if (!box) return;
+      var n = (+box.getAttribute('data-n') || 0) + 1;
+      box.setAttribute('data-n', n);
+      if (n <= MAX) box.insertAdjacentHTML('beforeend', avHtml(v.name, v.av));
+      else {
+        var m = box.querySelector('.more');
+        if (!m) { box.insertAdjacentHTML('beforeend', '<b class="more"></b>'); m = box.querySelector('.more'); }
+        m.textContent = '+' + (n - MAX);
+      }
+    });
+  }
+  function palcoMode() {
+    document.body.classList.add('palco');
+    document.title = 'Palco do Quiz';
+    var sc = document.getElementById('scene'), ov = document.getElementById('overlay');
+    sc.className = 'scene intro';
+    sc.innerHTML = '<p class="kicker">Aguardando o jogo</p>';
+    function apply(d) {
+      if (d.t === 'scene') { sc.className = d.cls; sc.innerHTML = d.html; }
+      else if (d.t === 'tick') {
+        var p = document.getElementById('prog'), n = document.getElementById('num'), r = document.getElementById('ring');
+        if (p && n && r) { p.style.strokeDashoffset = d.off; n.textContent = d.num; r.classList.toggle('urgent', d.urgent); }
+      } else if (d.t === 'votes') { addVotes(sc, d.list || []); }
+      else if (d.t === 'count') { var c = document.getElementById('ans-count'); if (c) c.textContent = String(d.n); }
+      else if (d.t === 'overlay') { ov.hidden = d.hidden; ov.innerHTML = d.html; }
+    }
+    if (!window.EventSource) return;
+    var es = new EventSource('/events');
+    es.addEventListener('stage', function (e) { try { apply(JSON.parse(e.data)); } catch (x) {} });
+  }
+
+  var Q = window.QuizLogic;
+  var KEY = 'quiztiktok.v2';
+  var L = ['A', 'B', 'C', 'D'];
+  var REVEAL_MS = 6000, BOARD_MS = 7000, LOCK_MS = 2000, GRACE_MS = 1500;
+  function mk(cat, d, q, o, c, keep) { var r = { cat: cat, d: d, q: q, o: o, c: c }; if (keep) r.keep = true; return r; }
+  var DEF = [
+    // d: 1 fácil, 2 médio, 3 difícil. "keep" mantém a ordem das alternativas (números e datas).
+    mk('Redes sociais', 1, 'Qual rede social mudou de nome e de logotipo para “X” em 2023?', ['Facebook', 'Twitter', 'Snapchat', 'Pinterest'], 1),
+    mk('Redes sociais', 1, 'Como se chamam os vídeos curtos e verticais do Instagram, criados para competir com o TikTok?', ['Stories', 'Reels', 'Shorts', 'Lives'], 1),
+    mk('Redes sociais', 1, 'Qual rede social é conhecida pelo logotipo de um fantasminha?', ['Snapchat', 'Telegram', 'Kwai', 'Twitch'], 0),
+    mk('Redes sociais', 2, 'Qual rede social criou o formato “Stories”, que depois foi copiado pelo Instagram?', ['Snapchat', 'TikTok', 'Twitter', 'Pinterest'], 0),
+    mk('Redes sociais', 2, 'Em que ano o Instagram foi lançado?', ['2008', '2010', '2012', '2014'], 1, true),
+    mk('Redes sociais', 2, 'Qual é o nome real do youtuber MrBeast?', ['Felix Kjellberg', 'Jimmy Donaldson', 'Mark Fischbach', 'Casey Neistat'], 1),
+    mk('Redes sociais', 2, 'Qual é o canal com mais inscritos no YouTube, com mais de 500 milhões?', ['T-Series', 'Cocomelon', 'MrBeast', 'PewDiePie'], 2),
+    mk('Redes sociais', 2, 'Quem é a pessoa com mais seguidores no Instagram?', ['Lionel Messi', 'Cristiano Ronaldo', 'Selena Gomez', 'Neymar'], 1),
+    mk('Redes sociais', 2, 'Qual é o nome do TikTok na China?', ['Weibo', 'Kuaishou', 'WeChat', 'Douyin'], 3),
+    mk('Redes sociais', 2, 'Qual é a rede social criada pela Meta em 2023 para concorrer com o X (antigo Twitter)?', ['Bluesky', 'Threads', 'Mastodon', 'Telegram'], 1),
+    mk('Redes sociais', 2, 'Quantos usuários ativos por mês o Instagram anunciou ter em setembro de 2025?', ['1 bilhão', '2 bilhões', '3 bilhões', '5 bilhões'], 2, true),
+    mk('Redes sociais', 3, 'Qual era o nome do aplicativo que deu origem ao Instagram?', ['Burbn', 'Hipstamatic', 'Picplz', 'Path'], 0),
+    mk('Redes sociais', 3, 'Quanto o Facebook pagou para comprar o Instagram, em 2012?', ['US$ 100 milhões', 'US$ 500 milhões', 'US$ 1 bilhão', 'US$ 5 bilhões'], 2, true),
+    mk('Redes sociais', 3, 'Qual animal aparece no primeiro vídeo da história do YouTube, “Me at the zoo”, de 2005?', ['Elefantes', 'Girafas', 'Macacos', 'Leões'], 0),
+    mk('Redes sociais', 3, 'Quem postou o primeiro tweet da história, em 2006, dizendo “just setting up my twttr”?', ['Elon Musk', 'Evan Williams', 'Jack Dorsey', 'Mark Zuckerberg'], 2),
+    mk('Redes sociais', 3, 'Qual destas empresas faz parte do grupo de investidores que assumiu o controle do TikTok nos Estados Unidos em 2026?', ['Amazon', 'Oracle', 'Google', 'Netflix'], 1),
+
+    mk('Internet e IA', 1, 'Em 2025, uma trend transformou fotos no estilo de animação de qual estúdio japonês usando o ChatGPT?', ['Pixar', 'Studio Ghibli', 'Toei Animation', 'Madhouse'], 1),
+    mk('Internet e IA', 1, 'Qual doce viralizou nas redes, com recheio de pistache e massa crocante, e leva o nome de uma cidade dos Emirados Árabes?', ['Chocolate de Dubai', 'Chocolate de Paris', 'Chocolate de Istambul', 'Chocolate de Bruxelas'], 0),
+    mk('Internet e IA', 2, 'Qual aplicativo da OpenAI, lançado em 2025, parece um TikTok, mas com vídeos feitos por inteligência artificial?', ['Sora', 'Midjourney', 'Gemini', 'Copilot'], 0),
+    mk('Internet e IA', 2, 'Qual boneco de pelúcia com dentes pontudos, vendido pela Pop Mart, virou febre mundial em 2025?', ['Labubu', 'Molly', 'Dimoo', 'Crybaby'], 0),
+    mk('Internet e IA', 3, 'Qual foi a palavra do ano de 2025 do dicionário Oxford, usada para conteúdo feito para provocar raiva e gerar cliques?', ['Brain rot', 'Rage bait', 'Doomscrolling', 'Clickbait'], 1),
+    mk('Internet e IA', 3, 'Qual palavra o dicionário Merriam-Webster escolheu em 2025 para o lixo de baixa qualidade feito por IA que invade o feed?', ['Slop', 'Glitch', 'Spam', 'Cringe'], 0),
+    mk('Internet e IA', 3, 'Quem é o artista que criou o Labubu?', ['Takashi Murakami', 'Kasing Lung', 'Yayoi Kusama', 'KAWS'], 1),
+    mk('Internet e IA', 3, 'Qual destes personagens faz parte do fenômeno “Italian brainrot”, que viralizou no TikTok em 2025?', ['Tralalero Tralala', 'Spaghettini Bombini', 'Gattino Pizzaiolo', 'Fettuccine Supremo'], 0),
+
+    mk('Música', 1, 'Bad Bunny foi a atração principal do show do intervalo de qual evento em fevereiro de 2026?', ['Super Bowl', 'Final da Champions League', 'Rock in Rio', 'Final do US Open'], 0),
+    mk('Música', 1, 'Com qual jogador da NFL Taylor Swift ficou noiva em 2025?', ['Patrick Mahomes', 'Travis Kelce', 'Josh Allen', 'Tom Brady'], 1),
+    mk('Música', 2, 'Qual artista foi o mais ouvido do mundo no Spotify em 2025?', ['Taylor Swift', 'The Weeknd', 'Bad Bunny', 'Drake'], 2),
+    mk('Música', 2, 'Qual dupla foi a mais ouvida do Brasil no Spotify em 2025?', ['Jorge & Mateus', 'Henrique & Juliano', 'Zé Neto & Cristiano', 'Maiara & Maraisa'], 1),
+    mk('Música', 2, 'Qual álbum de Bad Bunny levou o Grammy de Álbum do Ano em 2026?', ['Un Verano Sin Ti', 'YHLQMDLG', 'Debí Tirar Más Fotos', 'Nadie Sabe Lo Que Va a Pasar Mañana'], 2),
+    mk('Música', 2, 'Quem ganhou o Grammy 2026 de Melhor Álbum de Música Global, com um álbum ao vivo ao lado de Maria Bethânia?', ['Gilberto Gil', 'Caetano Veloso', 'Milton Nascimento', 'Jorge Ben Jor'], 1),
+    mk('Música', 2, 'Qual álbum de Lady Gaga ganhou o Grammy 2026 de Melhor Álbum Vocal Pop?', ['Chromatica', 'Joanne', 'Mayhem', 'Artpop'], 2),
+    mk('Música', 3, 'Qual foi a música mais ouvida do mundo no Spotify em 2025?', ['Espresso', 'Die With A Smile', 'Birds of a Feather', 'Not Like Us'], 1),
+    mk('Música', 3, 'Quem ganhou o Grammy 2026 de Gravação do Ano com a música “Luther”?', ['Kendrick Lamar e SZA', 'Drake e Rihanna', 'Travis Scott e Beyoncé', 'Doja Cat e The Weeknd'], 0),
+
+    mk('Cinema e séries', 1, 'Qual brasileiro foi indicado ao Oscar 2026 de Melhor Ator por “O Agente Secreto”?', ['Rodrigo Santoro', 'Selton Mello', 'Wagner Moura', 'Lázaro Ramos'], 2),
+    mk('Cinema e séries', 1, 'Qual série da Netflix teve o episódio final lançado em 31 de dezembro de 2025?', ['Wandinha', 'Stranger Things', 'Round 6', 'The Witcher'], 1),
+    mk('Cinema e séries', 1, 'Qual animação virou o filme mais visto da história da Netflix?', ['Guerreiras do K-Pop', 'Os Mitchells Contra as Máquinas', 'Klaus', 'Pinóquio, de Guillermo del Toro'], 0),
+    mk('Cinema e séries', 2, 'Qual filme ganhou o Oscar 2026 de Melhor Filme?', ['Pecadores', 'Uma Batalha Após a Outra', 'Hamnet', 'O Agente Secreto'], 1),
+    mk('Cinema e séries', 2, 'Quem ganhou o Oscar 2026 de Melhor Ator, por “Pecadores”?', ['Michael B. Jordan', 'Timothée Chalamet', 'Leonardo DiCaprio', 'Wagner Moura'], 0),
+    mk('Cinema e séries', 2, 'Qual é o nome do grupo de K-pop das protagonistas de “Guerreiras do K-Pop”?', ['Saja Boys', 'HUNTR/X', 'Blackpink', 'Twice'], 1),
+    mk('Cinema e séries', 3, 'Qual música de “Guerreiras do K-Pop” ganhou o Oscar 2026 de Melhor Canção Original?', ['Takedown', 'Golden', 'How It’s Done', 'Soda Pop'], 1),
+    mk('Cinema e séries', 3, 'Qual atriz ganhou o Oscar 2026 de Melhor Atriz por “Hamnet”?', ['Emma Stone', 'Jessie Buckley', 'Rose Byrne', 'Kate Hudson'], 1),
+    mk('Cinema e séries', 3, 'Qual destes filmes ganhou o Oscar 2026 de Melhor Filme Internacional?', ['O Agente Secreto', 'Valor Sentimental', 'Foi Apenas um Acidente', 'A Voz de Hind Rajab'], 1),
+
+    mk('Esportes', 1, 'Quem foi campeã da Copa do Mundo de 2026?', ['Argentina', 'França', 'Espanha', 'Brasil'], 2),
+    mk('Esportes', 1, 'Quem foi o técnico da Seleção Brasileira na Copa de 2026?', ['Tite', 'Dorival Júnior', 'Carlo Ancelotti', 'Jorge Jesus'], 2),
+    mk('Esportes', 1, 'Quantas seleções disputaram a Copa de 2026, a primeira com o formato ampliado?', ['32', '40', '48', '64'], 2, true),
+    mk('Esportes', 1, 'Quem ganhou a final da Libertadores 2025, jogada em Lima?', ['Palmeiras', 'Flamengo', 'River Plate', 'Boca Juniors'], 1),
+    mk('Esportes', 2, 'Qual seleção eliminou o Brasil nas oitavas de final da Copa de 2026?', ['Marrocos', 'Japão', 'Noruega', 'Colômbia'], 2),
+    mk('Esportes', 2, 'Quem foi o artilheiro da Copa de 2026?', ['Erling Haaland', 'Harry Kane', 'Kylian Mbappé', 'Lautaro Martínez'], 2),
+    mk('Esportes', 2, 'Qual time venceu o Super Bowl LX, em fevereiro de 2026?', ['New England Patriots', 'Seattle Seahawks', 'Kansas City Chiefs', 'Philadelphia Eagles'], 1),
+    mk('Esportes', 2, 'Qual estádio sediou a final da Copa do Mundo de 2026?', ['Estádio Azteca', 'MetLife Stadium', 'Rose Bowl', 'SoFi Stadium'], 1),
+    mk('Esportes', 3, 'Quem marcou o gol do título da Espanha na final da Copa de 2026, na prorrogação?', ['Lamine Yamal', 'Ferran Torres', 'Álvaro Morata', 'Dani Olmo'], 1),
+    mk('Esportes', 3, 'Quem foi eleito o melhor jogador (Bola de Ouro) da Copa de 2026?', ['Lamine Yamal', 'Rodri', 'Lionel Messi', 'Kylian Mbappé'], 1),
+    mk('Esportes', 3, 'Com o título de 2025, quantas Libertadores o Flamengo tem?', ['2', '3', '4', '5'], 2, true),
+
+    mk('Brasil', 1, 'Quem venceu o BBB 26?', ['Davi Brito', 'Juliette', 'Ana Paula Renault', 'Arthur Aguiar'], 2),
+    mk('Brasil', 2, 'Qual escola de samba foi a campeã do Carnaval do Rio de Janeiro em 2026?', ['Beija-Flor', 'Viradouro', 'Mocidade', 'Portela'], 1),
+
+    mk('Games', 1, 'Qual cidade, inspirada em Miami, é o cenário de GTA 6?', ['Liberty City', 'Vice City', 'Los Santos', 'San Fierro'], 1),
+    mk('Games', 1, 'Em que ano foi lançado o Nintendo Switch 2?', ['2024', '2025', '2026', '2027'], 1, true),
+    mk('Games', 2, 'Qual é a data oficial de lançamento de GTA 6?', ['26 de maio de 2026', '15 de setembro de 2026', '19 de novembro de 2026', '2 de fevereiro de 2027'], 2, true),
+    mk('Games', 3, 'Em qual destas plataformas GTA 6 não terá versão no lançamento de novembro de 2026?', ['PlayStation 5', 'Xbox Series X', 'PC', 'Xbox Series S'], 2),
+    mk('Games', 3, 'Quem são os dois protagonistas de GTA 6?', ['Trevor e Franklin', 'Lucia e Jason', 'Carl e Sweet', 'Tommy e Lance'], 1),
+    mk('Games', 3, 'Qual jogo foi eleito o Jogo do Ano no The Game Awards 2025?', ['Hollow Knight: Silksong', 'Hades II', 'Clair Obscur: Expedition 33', 'Death Stranding 2'], 2),
+
+    // Perguntas acrescentadas em 26/10/2026, com fatos conferidos em fontes até essa data.
+    mk('Redes sociais', 1, 'Qual empresa é dona do Instagram, do WhatsApp e do Threads?', ['Google', 'Meta', 'Apple', 'ByteDance'], 1),
+    mk('Redes sociais', 1, 'Quem é o dono do X (antigo Twitter) desde 2022?', ['Mark Zuckerberg', 'Elon Musk', 'Jeff Bezos', 'Sam Altman'], 1),
+    mk('Redes sociais', 1, 'Qual brasileiro é o mais seguido do Instagram, com cerca de 230 milhões de seguidores?', ['Neymar', 'Anitta', 'Vinícius Júnior', 'Whindersson Nunes'], 0),
+    mk('Redes sociais', 1, 'Qual plataforma, da Amazon, é famosa por lives de games?', ['Kick', 'Twitch', 'Discord', 'Steam'], 1),
+    mk('Redes sociais', 2, 'Qual empresa chinesa é dona do TikTok?', ['Tencent', 'Alibaba', 'Huawei', 'ByteDance'], 3),
+    mk('Redes sociais', 2, 'Qual era o limite de caracteres dos tweets nos primeiros anos do Twitter?', ['100', '140', '280', '500'], 1, true),
+    mk('Redes sociais', 2, 'Qual criador, famoso por reagir sem falar a “life hacks” complicados, chegou a ser o mais seguido do TikTok?', ['Charli D’Amelio', 'Khaby Lame', 'Addison Rae', 'Bella Poarch'], 1),
+    mk('Redes sociais', 3, 'Qual percentual da nova empresa do TikTok nos EUA ficou com a ByteDance, após o acordo de janeiro de 2026?', ['5%', '19,9%', '35,1%', '51%'], 1, true),
+    mk('Redes sociais', 3, 'Em julho de 2026, quem ultrapassou Anitta e virou o 4º brasileiro mais seguido do Instagram?', ['Virginia Fonseca', 'Vini Jr.', 'Whindersson Nunes', 'Larissa Manoela'], 1),
+
+    mk('Internet e IA', 1, 'Qual raça de cachorro estampa o meme “Doge”?', ['Poodle', 'Husky', 'Shiba Inu', 'Pug'], 2),
+    mk('Internet e IA', 1, 'Qual música é usada no famoso meme “rickroll”?', ['Take On Me', 'Africa', 'Never Gonna Give You Up', 'Mr. Brightside'], 2),
+    mk('Internet e IA', 1, 'Em que ano o ChatGPT foi lançado ao público?', ['2020', '2021', '2022', '2023'], 2, true),
+    mk('Internet e IA', 2, 'Qual foi o primeiro vídeo do YouTube a passar de 1 bilhão de visualizações, em 2012?', ['Baby, de Justin Bieber', 'Gangnam Style', 'Call Me Maybe', 'Harlem Shake'], 1),
+    mk('Internet e IA', 2, 'O que significa “rizz”, palavra do ano de 2023 do dicionário Oxford, na internet?', ['Cansaço extremo', 'Carisma para flertar', 'Fingir ser outra pessoa', 'Ficar famoso de repente'], 1),
+    mk('Internet e IA', 2, 'Qual foi a palavra do ano de 2024 do dicionário Oxford, sobre o desgaste de consumir conteúdo bobo online?', ['Rizz', 'Slay', 'Brain rot', 'Delulu'], 2),
+
+    mk('Música', 1, 'Quem lançou o álbum “The Life of a Showgirl”, em outubro de 2025?', ['Sabrina Carpenter', 'Taylor Swift', 'Billie Eilish', 'Dua Lipa'], 1),
+    mk('Música', 3, 'Quem ganhou o Grammy 2026 de Artista Revelação?', ['Sabrina Carpenter', 'Olivia Dean', 'Chappell Roan', 'Doechii'], 1),
+    mk('Música', 3, 'Qual foi a música mais ouvida do Spotify no Brasil em 2025?', ['P do Pecado', 'Tubarões', 'Coração Partido', 'Apaga Apaga Apaga'], 1),
+    mk('Música', 3, 'Como se chama o grupo de garotos rival das heroínas no filme “Guerreiras do K-Pop”?', ['Saja Boys', 'Rumi Boys', 'Mystery Crew', 'Demon Five'], 0),
+
+    mk('Cinema e séries', 1, 'De qual país é a série Round 6 (Squid Game)?', ['Japão', 'China', 'Tailândia', 'Coreia do Sul'], 3),
+    mk('Cinema e séries', 2, 'Qual prêmio Wagner Moura ganhou em janeiro de 2026 por “O Agente Secreto”?', ['Oscar de Melhor Ator', 'Globo de Ouro de Melhor Ator de Drama', 'Palma de Ouro', 'Grammy'], 1),
+    mk('Cinema e séries', 2, 'Quem interpreta a bruxa Elphaba nos filmes “Wicked”?', ['Ariana Grande', 'Zendaya', 'Cynthia Erivo', 'Anne Hathaway'], 2),
+    mk('Cinema e séries', 3, 'Em quantas categorias “O Agente Secreto” foi indicado ao Oscar 2026?', ['2', '3', '4', '6'], 2, true),
+
+    mk('Esportes', 1, 'Qual cidade-sede recebeu as Olimpíadas de Inverno de 2026?', ['Pequim', 'Milão-Cortina', 'Vancouver', 'Sapporo'], 1),
+    mk('Esportes', 2, 'Qual foi o placar da final da Copa de 2026, decidida na prorrogação?', ['2 x 1', '1 x 0', '3 x 2', '2 x 0'], 1),
+    mk('Esportes', 2, 'Quem ganhou a Champions League 2025/26?', ['Arsenal', 'PSG', 'Bayern de Munique', 'Barcelona'], 1),
+    mk('Esportes', 2, 'Quem conquistou o primeiro ouro do Brasil em Olimpíadas de Inverno, em 2026?', ['Pat Burgener', 'Lucas Pinheiro Braathen', 'Nicole Silveira', 'Edson Bindilatti'], 1),
+    mk('Esportes', 2, 'Quem ganhou a Bola de Ouro de 2025, entregue pela France Football?', ['Lamine Yamal', 'Ousmane Dembélé', 'Raphinha', 'Vinícius Júnior'], 1),
+    mk('Esportes', 3, 'Quem ganhou a Luva de Ouro (melhor goleiro) da Copa de 2026?', ['Emiliano Martínez', 'Unai Simón', 'Thibaut Courtois', 'Alisson'], 1),
+    mk('Esportes', 3, 'A final da Champions 2026, entre PSG e Arsenal, foi 1 a 1 na prorrogação. Qual foi o placar nos pênaltis?', ['4 x 3', '5 x 4', '3 x 2', '6 x 5'], 0),
+    mk('Esportes', 3, 'Quem foi eleito o melhor jogador da final da Champions 2026?', ['Vitinha', 'Ousmane Dembélé', 'Kvaratskhelia', 'Marquinhos'], 0),
+    mk('Esportes', 3, 'Em qual cidade será a final da Libertadores 2026, marcada para 28 de novembro?', ['Lima', 'Assunção', 'Buenos Aires', 'Montevidéu'], 3),
+    mk('Esportes', 3, 'Quem venceu o GP da Hungria de F1 em 2026, sua primeira vitória na temporada?', ['Lando Norris', 'Kimi Antonelli', 'Lewis Hamilton', 'George Russell'], 0),
+    mk('Esportes', 3, 'Qual jovem piloto da Mercedes liderava o mundial de F1 de 2026 após o GP da Hungria?', ['Oscar Piastri', 'Max Verstappen', 'Kimi Antonelli', 'Charles Leclerc'], 2),
+
+    mk('Brasil', 3, 'Com o título de 2026, a Viradouro chegou a quantos campeonatos do Carnaval do Rio?', ['2', '3', '4', '5'], 2, true),
+    mk('Brasil', 3, 'Com qual porcentagem dos votos a campeã venceu o BBB 26?', ['52,3%', '61,8%', '75,94%', '88,1%'], 2, true),
+
+    mk('Games', 2, 'GTA 6 se passa em qual estado fictício dos EUA?', ['Leonida', 'San Andreas', 'Liberty State', 'Vice Beach'], 0),
+    mk('Tecnologia', 2, 'Qual é o nome do chip dos iPhone 18 Pro, o primeiro da Apple feito em 2 nanômetros?', ['A19 Pro', 'A20 Pro', 'M5', 'A18 Bionic'], 1),
+    mk('Tecnologia', 3, 'Qual novidade inédita de câmera a Apple destacou nos iPhone 18 Pro?', ['Câmera submarina', 'Abertura variável', 'Lente de 400 mm', 'Flash de xenônio'], 1),
+    mk('Tecnologia', 3, 'Quanto custa o iPhone 18 Pro de 256 GB no Brasil?', ['R$ 8.999', 'R$ 10.499', 'R$ 11.999', 'R$ 14.999'], 2, true)
+  ];
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function hitsLabel(n) { return n + (n === 1 ? ' acerto' : ' acertos'); }
+
+  /* ---------- dados salvos ---------- */
+  function load() { try { var r = localStorage.getItem(KEY); if (r) { var s = JSON.parse(r); if (s && typeof s === 'object') return s; } } catch (e) {} return null; }
+  var S = load() || {};
+  S.live = typeof S.live === 'string' && S.live ? S.live : 'Quiz da Live';
+  S.seconds = [10, 15, 20, 30, 45].indexOf(S.seconds) >= 0 ? S.seconds : 20;
+  S.delay = [2, 5, 8, 12, 15].indexOf(S.delay) >= 0 ? S.delay : 5;
+  S.loop = S.loop === true;
+  S.loopWait = [10, 20, 30, 60].indexOf(S.loopWait) >= 0 ? S.loopWait : 20;
+  S.sound = S.sound !== false;
+  S.auto = S.auto !== false;
+  S.perRound = [10, 15, 20, 30, 0].indexOf(S.perRound) >= 0 ? S.perRound : 15;
+  S.mix = S.mix !== false;
+  S.mini = S.mini !== false;
+  S.user = typeof S.user === 'string' ? S.user : '';
+  S.players = S.players && typeof S.players === 'object' ? S.players : {};
+  S.questions = Array.isArray(S.questions) ? S.questions.filter(function (q) { return q && Array.isArray(q.o) && q.o.length === 4; }) : [];
+  if (!S.questions.length) S.questions = clone(DEF);
+  var DP = {};
+  function P() { return (typeof srv !== 'undefined' && srv.state === 'demo') ? DP : S.players; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  // Quando o banco de perguntas cresce, quem já usa o jogo recebe as novas sem perder o que editou.
+  if ((S.bankV || 0) < 3) {
+    var have = {};
+    S.questions.forEach(function (q) { have[q.q] = 1; });
+    S.questions = S.questions.concat(clone(DEF).filter(function (q) { return !have[q.q]; }));
+    S.bankV = 3;
+    save();
+  }
+
+  /* ---------- estado da rodada ---------- */
+  var phase = 'intro', idx = -1, deck = [], total = 20, remaining = 20, deadline = 0, startedAt = 0, graceUntil = 0;
+  var timerId = null, autoId = null, drawId = null, lastTick = -1;
+  var answers = new Map(), result = null;
+  var srv = { ok: false, state: 'idle', message: '' };
+
+  var POLLS = [
+    { q: 'Qual rede social você abre primeiro de manhã?', o: ['Instagram', 'TikTok', 'WhatsApp', 'YouTube'] },
+    { q: 'O que você mais faz no celular?', o: ['Ver vídeos curtos', 'Mandar mensagem', 'Jogar', 'Ouvir música'] },
+    { q: 'Em que horário você mais fica nas redes?', o: ['Manhã', 'Tarde', 'Noite', 'Madrugada'] },
+    { q: 'Quanto tempo por dia você passa no celular?', o: ['Menos de 2 h', 'De 2 a 4 h', 'De 4 a 6 h', 'Mais de 6 h'] },
+    { q: 'Que tipo de live você mais curte?', o: ['Jogos', 'Música', 'Bate-papo', 'Quiz e sorteios'] },
+    { q: 'Que tipo de vídeo você mais compartilha?', o: ['Memes', 'Dancinhas', 'Receitas', 'Notícias'] },
+    { q: 'Qual é o seu app de música?', o: ['Spotify', 'YouTube Music', 'Deezer', 'Apple Music'] },
+    { q: 'Onde você mais assiste séries e filmes?', o: ['Netflix', 'Prime Video', 'Disney+', 'Max'] },
+    { q: 'Como você prefere falar com os amigos?', o: ['Áudio', 'Texto', 'Figurinha', 'Vídeo'] },
+    { q: 'Qual rede você usa mais para ver do que para postar?', o: ['Instagram', 'TikTok', 'X (Twitter)', 'Facebook'] }
+  ];
+  function valid(q) { return q && String(q.q || '').trim() && q.o.length === 4 && q.o.every(function (x) { return String(x || '').trim(); }); }
+  var DIFF = { 1: 'Fácil', 2: 'Médio', 3: 'Difícil' };
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function roundSize() { var n = S.questions.filter(valid).length; return S.perRound ? Math.min(S.perRound, n) : n; }
+  // Sorteia as perguntas da rodada: cerca de 30% fáceis, 40% médias e 30% difíceis, com uma fácil para abrir.
+  function buildDeck() {
+    var pool = S.questions.filter(valid), n = roundSize(), picked;
+    if (!S.mix) picked = pool.slice(0, n);
+    else {
+      var g = { 1: [], 2: [], 3: [] };
+      pool.forEach(function (q) { (g[q.d] || g[2]).push(q); });
+      var want = { 1: Math.round(n * 0.3), 3: Math.round(n * 0.3) };
+      want[2] = n - want[1] - want[3];
+      picked = [];
+      // Perguntas que ainda não saíram vêm primeiro, para não repetir de uma rodada para a outra.
+      // Se um nível acabar, completa com novas de outro nível. Só repete quando não sobra nenhuma nova.
+      var seen = {}; (S.seen || []).forEach(function (t) { seen[t] = 1; });
+      var used = { 1: [], 2: [], 3: [] };
+      [1, 2, 3].forEach(function (k) {
+        shuffle(g[k]);
+        used[k] = g[k].filter(function (q) { return seen[q.q]; });
+        g[k] = g[k].filter(function (q) { return !seen[q.q]; });
+        picked = picked.concat(g[k].splice(0, want[k]));
+      });
+      var rest = shuffle(g[1].concat(g[2], g[3]));
+      while (picked.length < n && rest.length) picked.push(rest.shift());
+      rest = shuffle(used[1].concat(used[2], used[3]));
+      while (picked.length < n && rest.length) picked.push(rest.shift());
+      shuffle(picked);
+      var e = picked.findIndex(function (q) { return q.d === 1; });
+      if (e > 0) { var t = picked[0]; picked[0] = picked[e]; picked[e] = t; }
+    }
+    deck = picked.map(function (q) {
+      var order = [0, 1, 2, 3];
+      if (S.mix && !q.keep) shuffle(order);
+      return { q: q.q, o: order.map(function (i) { return q.o[i]; }), c: order.indexOf(q.c), cat: q.cat || '', d: q.d || 2, mode: '' };
+    });
+    if (S.mini) addMiniGames();
+  }
+  // Mini-games: a cada 5 perguntas uma especial (vale dobro ou relâmpago) e, a cada 10, uma enquete da plateia.
+  function addMiniGames() {
+    var n = deck.length, i;
+    for (i = 4; i < n; i += 5) deck[i].mode = (Math.floor(i / 5) % 2 === 0) ? 'double' : 'blitz';
+    var np = Math.floor(n / 10), pool = shuffle(POLLS.slice()), at = [];
+    for (i = 0; i < np; i++) at.push(Math.round((i + 1) * n / (np + 1)));
+    // insere de trás para frente para não mudar as posições já calculadas
+    for (i = np - 1; i >= 0; i--) {
+      var pl = pool[i % pool.length], pos = Math.max(2, Math.min(n - 1, at[i]));
+      // evita colocar a enquete colada numa pergunta especial
+      [0, 1, -1, 2, -2].some(function (d) {
+        var c = at[i] + d;
+        if (c >= 2 && c <= n - 1 && deck[c - 1] && !deck[c - 1].mode && !(deck[c] && deck[c].mode)) { pos = c; return true; }
+        return false;
+      });
+      deck.splice(pos, 0, { q: pl.q, o: pl.o.slice(), c: -1, cat: 'Enquete da plateia', d: 0, mode: 'poll' });
+    }
+  }
+
+  // Guarda as perguntas da rodada que começou. Quando todas já saíram, recomeça só com as da rodada atual.
+  function markSeen() {
+    var total = S.questions.filter(valid).length, seen = (S.seen || []).slice();
+    deck.forEach(function (q) { if (seen.indexOf(q.q) < 0) seen.push(q.q); });
+    S.seen = seen.length >= total ? deck.map(function (q) { return q.q; }) : seen;
+    save();
+  }
+
+  /* ---------- sons ---------- */
+  var ac = null;
+  function tone(f, d, type, v, delay) {
+    if (!S.sound) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      var t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(v || 0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
+    } catch (e) {}
+  }
+
+  /* ---------- palco ---------- */
+  function topListHtml(list) {
+    return '<ol class="top">' + list.map(function (p, i) {
+      return '<li><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(p.name) + '</span><span class="sc"><b>' + hitsLabel(p.hits) + '</b>' + Q.fmt(p.time / p.hits) + ' em média</span></li>';
+    }).join('') + '</ol>';
+  }
+
+  var BADGES = { double: '⭐ Vale 2 acertos', blitz: '⚡ Relâmpago · vale 2', poll: '📊 Enquete · sem pontos' };
+  var ignored = 0, votesQ = [];
+  function optVotes(i) {
+    var list = [], MAX = 10;
+    answers.forEach(function (a) { if (a.letter === L[i]) list.push(a); });
+    var html = list.slice(0, MAX).map(function (a) { return avHtml(a.name, a.av); }).join('');
+    if (list.length > MAX) html += '<b class="more">+' + (list.length - MAX) + '</b>';
+    return '<span class="vt" data-i="' + i + '" data-n="' + list.length + '">' + html + '</span>';
+  }
+  function confettiHtml() {
+    var h = '<div class="confetti" aria-hidden="true">';
+    for (var k = 0; k < 22; k++) h += '<i style="--x:' + Math.round(Math.random() * 96) + '%;--d:' + (2.6 + Math.random() * 2.4).toFixed(2) + 's;--r:' + Math.round(Math.random() * 360) + 'deg;animation-delay:-' + (Math.random() * 2).toFixed(2) + 's"></i>';
+    return h + '</div>';
+  }
+  function renderStage() {
+    var sc = $('scene'), h = '', n = deck.length;
+    var ranking = Q.rank(P()).slice(0, 5);
+    if (phase === 'intro') {
+      var nPolls = deck.filter(function (x) { return x.mode === 'poll'; }).length;
+      var cnt = deck.length ? deck.length - nPolls : roundSize();
+      sc.className = 'scene intro';
+      h = '<p class="kicker">Ao vivo</p>' +
+        '<h2 class="big">' + esc(S.live) + '</h2>' +
+        '<p class="meta">' + cnt + (cnt === 1 ? ' pergunta' : ' perguntas') + (nPolls ? ' + ' + nPolls + (nPolls === 1 ? ' enquete' : ' enquetes') : '') + ' · ' + S.seconds + ' segundos cada</p>' +
+        (loopAt && loopKind === 'intro' ? '<p class="meta">Começa em ' + loopSecs() + ' s</p>' : '') +
+        '<div class="howto"><span>Comente só a letra</span><div class="letters"><span>A</span><span>B</span><span>C</span><span>D</span></div></div>';
+    } else if (phase === 'board') {
+      sc.className = 'scene boardscene';
+      h = '<div><p class="kicker">' + (deck[idx] && deck[idx].mode === 'poll' ? 'Depois da enquete' : 'Depois da pergunta ' + (idx + 1) + ' de ' + n) + '</p><h2>Top 5</h2><p class="kicker" style="margin-top:2cqw">Quem mais acertou</p></div>' +
+        (ranking.length ? topListHtml(ranking) : '<p class="nobody">Ninguém acertou ainda. A próxima é sua!</p>');
+    } else if (phase === 'end') {
+      sc.className = 'scene boardscene';
+      h = '<div><p class="kicker">Fim do quiz</p>' + (ranking.length ? '<h2>Campeão</h2><p class="champ" style="margin-top:2cqw">' + esc(ranking[0].name) + '</p>' : '<h2>Fim</h2>') + '</div>' +
+        (ranking.length ? topListHtml(ranking) : '<p class="nobody">Ninguém acertou nesta rodada.</p>') +
+        '<p class="kicker" style="text-align:center">' + (loopAt && loopKind === 'end' ? 'Nova rodada em ' + loopSecs() + ' s · placar zerado' : 'Obrigado por jogar!') + '</p>';
+    } else {
+      var q = deck[idx], poll = q.mode === 'poll';
+      sc.className = 'scene' + (phase === 'reveal' ? ' rev' : '');
+      var right = phase === 'reveal'
+        ? '<span class="answer-pill">' + (poll ? (result && result.total ? 'Maioria: ' + L[result.win] : 'Sem votos') : 'Resposta ' + L[q.c]) + '</span>'
+        : '<div class="ring" id="ring"><svg viewBox="0 0 60 60" aria-hidden="true"><circle class="track" cx="30" cy="30" r="26"/><circle class="prog" id="prog" cx="30" cy="30" r="26"/></svg><span class="num" id="num">' + Math.ceil(remaining) + '</span></div>';
+      var badge = BADGES[q.mode] ? '<span class="badge b-' + q.mode + '">' + BADGES[q.mode] + '</span>' : '';
+      h = '<div class="head"><div><p class="kicker">' + esc((poll ? [q.cat] : [q.cat, DIFF[q.d]]).filter(Boolean).join(' · ') || S.live) + '</p><p class="count">' + (poll ? 'Enquete' : 'Pergunta') + ' ' + (idx + 1) + ' de ' + n + '</p>' + badge + '</div>' + right + '</div>' +
+        '<div class="qwrap"><h2 class="q' + (q.q.length > 85 ? ' long' : '') + '">' + esc(q.q) + '</h2></div>' +
+        '<ol class="opts">' + q.o.map(function (t, i) {
+          var cls = 'opt', tag = '', fill = '';
+          if (phase === 'reveal' && result) {
+            var pct = result.total ? Math.round(result.counts[i] * 100 / result.total) : 0;
+            var win = poll ? (result.total > 0 && i === result.win) : i === q.c;
+            cls += win ? ' correct' : ' dim';
+            tag = (win ? (poll ? 'Maioria<br>' : 'Certa<br>') : '') + pct + '%';
+            fill = '<span class="fill" style="--p:' + pct + '%"></span>';
+          }
+          return '<li class="' + cls + '">' + fill + '<span class="chip">' + L[i] + '</span><span class="txt">' + esc(t) + '</span>' + (tag ? '<span class="tag">' + tag + '</span>' : '') + optVotes(i) + '</li>';
+        }).join('') + '</ol>';
+      var foot;
+      if (phase === 'running') foot = 'Comente só a letra <strong>A, B, C ou D</strong><span id="ans-line"><span id="ans-count">' + answers.size + '</span> ' + (poll ? 'votos' : 'respostas') + '</span>';
+      else if (phase === 'locked') foot = '<span class="timeup">Tempo esgotado! Contando as respostas</span>';
+      else {
+        var hits = result ? result.hits : [];
+        if (poll) {
+          foot = '<div class="award">' + (result && result.total ? 'A plateia escolheu: ' + L[result.win] + ' · ' + esc(q.o[result.win]) : 'Ninguém votou desta vez') + '</div>' +
+            '<div class="tip">Enquete sem pontos. Para votar, comente <b>só a letra</b>: <b>A</b>, <b>B</b>, <b>C</b> ou <b>D</b>.</div>';
+        } else {
+          foot = '<div class="award">' + (hits.length ? hits.length + (hits.length === 1 ? ' pessoa acertou' : ' pessoas acertaram') + (result && result.w === 2 ? ' · +2 acertos cada' : '') : 'Ninguém acertou desta vez') + '</div>' +
+            (hits.length ? '<span class="fast">Mais rápido: <strong>' + esc(hits[0].name) + '</strong> em ' + Q.fmt(hits[0].t) + '</span>' : '') +
+            '<div class="tip">Para contar, comente <b>só a letra</b> (<b>A</b>, <b>B</b>, <b>C</b> ou <b>D</b>). Escrever a resposta inteira não vale!' +
+            (ignored > 0 ? '<small>' + ignored + (ignored === 1 ? ' comentário não valeu' : ' comentários não valeram') + ' como resposta nesta pergunta.</small>' : '') + '</div>';
+        }
+      }
+      h += '<div class="foot">' + foot + '</div>';
+      if (phase === 'reveal' && !poll && result && result.hits.length) h += confettiHtml();
+    }
+    votesQ = [];
+    sc.innerHTML = h;
+    stagePost({ t: 'scene', cls: sc.className, html: h });
+    if (phase === 'running') updateTimer(true);
+  }
+
+  // Envia o que está no palco para a janela /?palco (que pode estar no navegador ou no OBS).
+  var lastTickPost = 0;
+  function stagePost(msg) {
+    if (!srv.ok) return;
+    try { fetch('/api/stage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(msg) }).catch(function () {}); } catch (e) {}
+  }
+
+  function updateTimer(force) {
+    var prog = $('prog'), num = $('num'), ring = $('ring');
+    if (!prog) return;
+    prog.style.strokeDashoffset = String(163.36 * (1 - remaining / total));
+    num.textContent = String(Math.ceil(remaining));
+    ring.classList.toggle('urgent', remaining <= 5);
+    var now = Date.now();
+    if (force || now - lastTickPost >= 150) {
+      lastTickPost = now;
+      stagePost({ t: 'tick', off: prog.style.strokeDashoffset, num: num.textContent, urgent: remaining <= 5 });
+    }
+  }
+
+  function renderControls() {
+    var p = $('primary'), nQ = S.questions.filter(valid).length, label = '', off = false;
+    if (phase === 'intro') { label = nQ ? 'Lançar pergunta 1' : 'Complete as perguntas para começar'; off = !nQ; }
+    else if (phase === 'running') label = 'Revelar resposta agora';
+    else if (phase === 'locked') label = 'Revelar resposta';
+    else if (phase === 'reveal') label = 'Mostrar Top 5';
+    else if (phase === 'board') label = idx + 1 < deck.length ? (deck[idx + 1].mode === 'poll' ? 'Lançar enquete' : 'Lançar pergunta ' + (idx + 2)) : 'Ver resultado final';
+    else label = 'Jogar de novo';
+    p.textContent = label; p.disabled = off;
+    $('btn-restart').hidden = phase === 'intro';
+    $('btn-end').hidden = phase === 'intro' || phase === 'end';
+  }
+
+  /* ---------- fluxo ---------- */
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function schedule(ms, fn) { clearTimeout(autoId); autoId = null; if (S.auto) autoId = setTimeout(fn, ms); }
+  function rearm() {
+    clearTimeout(autoId); autoId = null;
+    if (!S.auto) return;
+    if (phase === 'locked') schedule(1000, reveal);
+    else if (phase === 'reveal') schedule(3000, showBoard);
+    else if (phase === 'board') schedule(3000, next);
+  }
+  function hint(letter, level) {
+    if (srv.state !== 'demo') return;
+    try { fetch('/api/hint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ correct: letter, d: level }) }); } catch (e) {}
+  }
+
+  var loopId = null, loopTickId = null, loopAt = 0, loopKind = '';
+  function loopClear() { clearTimeout(loopId); clearInterval(loopTickId); loopId = null; loopTickId = null; loopAt = 0; loopKind = ''; }
+  function loopArm(kind, ms, fn) {
+    loopClear();
+    if (!S.loop || !S.auto) return;
+    loopKind = kind; loopAt = Date.now() + ms; loopId = setTimeout(fn, ms);
+    loopTickId = setInterval(function () { if (phase === kind) renderStage(); }, 1000);
+  }
+  function loopSecs() { return Math.max(0, Math.ceil((loopAt - Date.now()) / 1000)); }
+  function loopNew() {
+    if (!S.loop || phase !== 'end') return;
+    if (srv.state === 'demo') DP = {}; else S.players = {};
+    save(); restart(); renderTop(); loopStart();
+  }
+  function loopStart() {
+    // dá uns segundos para o público ver a tela inicial e depois lança a pergunta 1
+    if (phase === 'intro') loopArm('intro', 8000, function () { if (S.loop && phase === 'intro') primary(); });
+  }
+  function launch() {
+    loopClear();
+    stopTimer(); clearTimeout(autoId); idx++; phase = 'running'; lastTick = -1;
+    answers = new Map(); result = null;
+    var cur = deck[idx];
+    total = cur.mode === 'blitz' ? Math.max(8, Math.round(S.seconds / 2)) : S.seconds;
+    remaining = total; startedAt = Date.now(); deadline = startedAt + total * 1000; graceUntil = 0;
+    ignored = 0; votesQ = [];
+    if (cur.mode === 'poll') hint(L[Math.floor(Math.random() * 4)], 3); else hint(L[cur.c], cur.d);
+    tone(660, 0.14, 'triangle'); tone(880, 0.2, 'triangle', 0.08, 0.12);
+    if (cur.mode === 'blitz') tone(1175, 0.18, 'square', 0.04, 0.26);
+    renderStage(); renderControls();
+    timerId = setInterval(tick, 100);
+  }
+  function tick() {
+    remaining = Math.max(0, (deadline - Date.now()) / 1000);
+    var s = Math.ceil(remaining);
+    if (s <= 3 && s > 0 && s !== lastTick) { lastTick = s; tone(520, 0.08, 'square', 0.04); }
+    updateTimer();
+    if (remaining <= 0) {
+      stopTimer(); phase = 'locked'; graceUntil = Date.now() + S.delay * 1000;
+      tone(200, 0.45, 'sawtooth', 0.07);
+      renderStage(); renderControls();
+      schedule(Math.max(LOCK_MS, S.delay * 1000 + 300), reveal);
+    }
+  }
+  function reveal() {
+    if (phase !== 'running' && phase !== 'locked') return;
+    stopTimer(); clearTimeout(autoId);
+    var q = deck[idx], counts = [0, 0, 0, 0], hits = [];
+    var poll = q.mode === 'poll', w = (q.mode === 'double' || q.mode === 'blitz') ? 2 : 1;
+    answers.forEach(function (a, k) {
+      counts[L.indexOf(a.letter)]++;
+      if (!poll && a.letter === L[q.c]) hits.push({ k: k, name: a.name, t: a.t });
+    });
+    hits.sort(function (x, y) { return x.t - y.t; });
+    hits.forEach(function (h) {
+      var p = P()[h.k] || (P()[h.k] = { name: h.name, hits: 0, time: 0 });
+      p.name = h.name; p.hits += w; p.time += h.t * w;
+    });
+    result = { counts: counts, total: answers.size, hits: hits, w: w, win: poll ? counts.indexOf(Math.max.apply(null, counts)) : q.c };
+    save(); phase = 'reveal';
+    tone(523, 0.16, 'triangle'); tone(659, 0.16, 'triangle', 0.08, 0.14); tone(784, 0.3, 'triangle', 0.08, 0.28);
+    renderStage(); renderControls(); renderTop();
+    schedule(REVEAL_MS, showBoard);
+  }
+  function showBoard() {
+    if (phase !== 'reveal') return;
+    clearTimeout(autoId); phase = 'board';
+    tone(659, 0.12, 'triangle'); tone(784, 0.12, 'triangle', 0.08, 0.1);
+    renderStage(); renderControls();
+    schedule(BOARD_MS, next);
+  }
+  function next() {
+    if (phase !== 'board') return;
+    if (idx + 1 < deck.length) launch(); else finish();
+  }
+  function finish() {
+    stopTimer(); clearTimeout(autoId); phase = 'end';
+    tone(523, 0.15, 'triangle'); tone(659, 0.15, 'triangle', 0.08, 0.12); tone(784, 0.15, 'triangle', 0.08, 0.24); tone(1047, 0.4, 'triangle', 0.08, 0.36);
+    renderStage(); renderControls();
+    loopArm('end', S.loopWait * 1000, loopNew);
+    if (loopAt) renderStage();
+  }
+  function restart() { loopClear(); stopTimer(); clearTimeout(autoId); closeOverlay(); phase = 'intro'; idx = -1; result = null; answers = new Map(); buildDeck(); renderStage(); renderControls(); }
+  function primary() {
+    if (phase === 'intro') { buildDeck(); if (!deck.length) return; markSeen(); idx = -1; launch(); }
+    else if (phase === 'running' || phase === 'locked') reveal();
+    else if (phase === 'reveal') showBoard();
+    else if (phase === 'board') next();
+    else restart();
+  }
+
+  /* ---------- chat ---------- */
+  var feed = [], feedDirty = false, countDirty = false;
+  var chatSeen = 0;
+  function onChat(m) {
+    if (m.demo && srv.state !== 'demo') return;
+    var counted = null;
+    chatSeen++;
+    if (phase === 'running' || (phase === 'locked' && Date.now() < graceUntil)) {
+      var letter = Q.parseAnswer(m.text);
+      if (letter) {
+        var k = String(m.id).toLowerCase();
+        if (!answers.has(k)) {
+          answers.set(k, { letter: letter, name: m.name, av: m.av || null, t: Math.min(total, Math.max(0, (Date.now() - startedAt) / 1000)) });
+          counted = letter; countDirty = true;
+          votesQ.push({ i: L.indexOf(letter), name: m.name, av: m.av || null });
+        }
+      } else ignored++;
+    }
+    var fs = $('feed-stat');
+    if (fs) fs.textContent = 'Comentários recebidos: ' + chatSeen + ' · Respostas contadas nesta pergunta: ' + answers.size + ((phase === 'running' || phase === 'locked') ? '' : ' · Nenhuma pergunta no ar: clique em Lançar pergunta para contar.');
+    feed.push({ name: m.name, text: m.text, letter: counted });
+    if (feed.length > 12) feed.shift();
+    feedDirty = true;
+    if (!rafId) rafId = raf(flush);
+  }
+  var rafId = 0;
+  function flush() {
+    rafId = 0;
+    if (feedDirty) {
+      feedDirty = false;
+      $('feed-empty').hidden = feed.length > 0;
+      $('feed').innerHTML = feed.slice().reverse().map(function (f) {
+        return '<li><span class="fl' + (f.letter ? ' l-' + f.letter : '') + '">' + (f.letter || '·') + '</span><span class="ft"><b>' + esc(f.name) + '</b>' + esc(f.text) + '</span></li>';
+      }).join('');
+    }
+    if (votesQ.length) {
+      var vs = votesQ; votesQ = [];
+      addVotes($('scene'), vs);
+      stagePost({ t: 'votes', list: vs });
+    }
+    if (countDirty) { countDirty = false; var c = $('ans-count'); if (c) c.textContent = String(answers.size); stagePost({ t: 'count', n: answers.size }); }
+  }
+
+  /* ---------- servidor local ---------- */
+  function setConnUi() {
+    var pill = $('pill'), st = srv.state, text = 'Sem servidor', cls = 'pill';
+    if (srv.ok) {
+      text = { idle: 'Desconectado', connecting: 'Conectando', connected: 'Conectado', demo: 'Demonstração', error: 'Erro' }[st] || 'Desconectado';
+      cls += ' ' + st;
+    } else cls += ' error';
+    pill.className = cls; pill.textContent = text;
+    $('conn-msg').textContent = srv.ok ? srv.message : 'Não achei o servidor. Abra esta página pelo endereço http://localhost:3000 depois de rodar "npm start".';
+    var on = srv.ok && (st === 'connected' || st === 'connecting');
+    $('tt-connect').textContent = on ? 'Desconectar' : 'Conectar ao chat';
+    $('tt-demo').textContent = srv.ok && st === 'demo' ? 'Parar demonstração' : 'Testar com demonstração';
+    $('tt-user').disabled = on;
+  }
+  function post(path, body) {
+    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+      .catch(function () { srv.ok = false; setConnUi(); });
+  }
+  function connectEvents() {
+    if (!window.EventSource) return;
+    var es = new EventSource('/events');
+    es.onopen = function () {
+      srv.ok = true; setConnUi();
+      // Reenvia o palco quando a conexão volta (por exemplo, depois de reiniciar o servidor).
+      renderStage();
+      stagePost({ t: 'overlay', hidden: $('overlay').hidden, html: $('overlay').innerHTML });
+    };
+    es.onerror = function () { srv.ok = false; setConnUi(); };
+    es.addEventListener('status', function (e) { var d = JSON.parse(e.data); srv.ok = true; var was = srv.state; srv.state = d.state; srv.message = d.message;
+      if ((was === 'demo') !== (d.state === 'demo') && was !== undefined) {
+        // trocou entre demonstração e live real: some tudo que era simulado
+        DP = {}; feed = []; feedDirty = true; chatSeen = 0; answers = new Map(); $('feed-stat').textContent = 'Comentários recebidos: 0 · Respostas contadas nesta pergunta: 0';
+        if (phase !== 'intro') restart();
+        renderTop(); renderStage();
+        if (!rafId) rafId = raf(flush);
+      }
+      setConnUi(); });
+    es.addEventListener('chat', function (e) { onChat(JSON.parse(e.data)); });
+  }
+  $('tt-user').value = S.user;
+  $('conn-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (srv.ok && (srv.state === 'connected' || srv.state === 'connecting')) { post('/api/disconnect'); return; }
+    var u = $('tt-user').value.trim();
+    if (!u) { $('conn-msg').textContent = 'Digite o @ do usuário que vai fazer a live.'; return; }
+    S.user = u; save(); post('/api/connect', { username: u });
+  });
+  $('tt-demo').addEventListener('click', function () { post('/api/demo', { on: !(srv.ok && srv.state === 'demo') }); });
+
+  /* ---------- placar ---------- */
+  function renderTop() {
+    var list = Q.rank(P()).slice(0, 5);
+    $('top-empty').hidden = list.length > 0;
+    $('sidetop').innerHTML = list.map(function (p, i) {
+      return '<li><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(p.name) + '</span><span class="sc"><b>' + hitsLabel(p.hits) + '</b>' + Q.fmt(p.time / p.hits) + ' em média</span></li>';
+    }).join('');
+  }
+  var msgTimer = null;
+  function say(t) { var m = $('conn-msg'); m.textContent = t; clearTimeout(msgTimer); msgTimer = setTimeout(setConnUi, 5000); }
+  $('manual').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('m-user').value.trim().replace(/^@+/, '').replace(/\s+/g, '');
+    if (!name) { say('Digite o @ de quem acertou.'); return; }
+    var k = name.toLowerCase(), p = P()[k] || (P()[k] = { name: name, hits: 0, time: 0 });
+    p.hits += 1; save(); renderTop(); renderStage(); $('m-user').value = ''; say('Acerto contado para @' + name);
+  });
+
+  /* ---------- sorteio ---------- */
+  function closeOverlay() { clearInterval(drawId); $('overlay').hidden = true; stagePost({ t: 'overlay', hidden: true, html: '' }); }
+  function draw() {
+    var list = Q.rank(P());
+    if (!list.length) { say('Ninguém acertou ainda. Jogue uma rodada antes de sortear.'); return; }
+    var ov = $('overlay'), n = 0, final = list[Math.floor(Math.random() * list.length)];
+    function show(name, done) {
+      ov.innerHTML = '<p class="kicker">' + (done ? 'Sorteado' : 'Sorteando') + '</p><p class="winner' + (done ? ' done' : '') + '">' + esc(name) + '</p>' + (done ? '<p class="hint">Toque para fechar</p>' : '');
+      stagePost({ t: 'overlay', hidden: false, html: ov.innerHTML });
+    }
+    ov.hidden = false; clearInterval(drawId); show(list[0].name, false);
+    drawId = setInterval(function () {
+      n++;
+      if (n >= 18) { clearInterval(drawId); show(final.name, true); tone(784, 0.15, 'triangle'); tone(1047, 0.35, 'triangle', 0.08, 0.14); return; }
+      show(list[Math.floor(Math.random() * list.length)].name, false); tone(440 + n * 12, 0.04, 'square', 0.025);
+    }, 90);
+  }
+  $('btn-draw').addEventListener('click', draw);
+  $('overlay').addEventListener('click', closeOverlay);
+
+  /* ---------- editor de perguntas ---------- */
+  function renderEditor() {
+    $('qcount').textContent = S.questions.length;
+    $('editor').innerHTML = S.questions.map(function (q, i) {
+      return '<div class="qe">' +
+        '<div class="qe-top"><b>Pergunta ' + (i + 1) + '</b><button class="small" type="button" data-act="del" data-i="' + i + '">Remover</button></div>' +
+        '<div class="field" style="margin-top:0"><label for="qq-' + i + '">Texto da pergunta</label><textarea id="qq-' + i + '" data-f="q" data-i="' + i + '" rows="2">' + esc(q.q) + '</textarea></div>' +
+        '<div class="catrow"><div class="field" style="margin-top:0"><label for="qk-' + i + '">Tema</label><input type="text" id="qk-' + i + '" data-f="cat" data-i="' + i + '" value="' + esc(q.cat || '') + '" maxlength="30"></div>' +
+        '<div class="field" style="margin-top:0"><label for="qd-' + i + '">Dificuldade</label><select id="qd-' + i + '" data-f="d" data-i="' + i + '">' +
+        [1, 2, 3].map(function (d) { return '<option value="' + d + '"' + ((q.d || 2) === d ? ' selected' : '') + '>' + DIFF[d] + '</option>'; }).join('') + '</select></div></div>' +
+        q.o.map(function (t, j) {
+          return '<div class="qopt o' + j + '"><input type="radio" id="qr-' + i + '-' + j + '" name="qc-' + i + '" value="' + j + '" data-f="c" data-i="' + i + '"' + (q.c === j ? ' checked' : '') + ' aria-label="Marcar ' + L[j] + ' como resposta certa">' +
+            '<span class="lt" aria-hidden="true">' + L[j] + '</span><input type="text" id="qo-' + i + '-' + j + '" data-f="o" data-i="' + i + '" data-j="' + j + '" value="' + esc(t) + '" aria-label="Resposta ' + L[j] + '"></div>';
+        }).join('') + '</div>';
+    }).join('');
+  }
+  function editedIntro() { if (phase === 'intro') { buildDeck(); renderStage(); renderControls(); } }
+  $('editor').addEventListener('input', function (e) {
+    var t = e.target, i = +t.getAttribute('data-i'), f = t.getAttribute('data-f');
+    if (!S.questions[i]) return;
+    if (f === 'q') S.questions[i].q = t.value;
+    else if (f === 'cat') S.questions[i].cat = t.value;
+    else if (f === 'd') S.questions[i].d = +t.value;
+    else if (f === 'o') S.questions[i].o[+t.getAttribute('data-j')] = t.value;
+    save(); editedIntro();
+  });
+  $('editor').addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.getAttribute('data-f') === 'c') { S.questions[+t.getAttribute('data-i')].c = +t.value; save(); }
+  });
+  $('editor').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act="del"]');
+    if (!b) return;
+    if (S.questions.length <= 1) { say('Mantenha pelo menos uma pergunta.'); return; }
+    S.questions.splice(+b.getAttribute('data-i'), 1); save(); renderEditor(); editedIntro();
+  });
+  $('q-add').addEventListener('click', function () {
+    S.questions.push({ cat: '', d: 2, q: '', o: ['', '', '', ''], c: 0 }); save(); renderEditor();
+    var el = $('qq-' + (S.questions.length - 1)); if (el) el.focus();
+    editedIntro();
+  });
+  function armButton(b, armedText, normalText, action) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-arm') !== '1') {
+        b.setAttribute('data-arm', '1'); b.textContent = armedText; b.classList.add('warn');
+        setTimeout(function () { b.removeAttribute('data-arm'); b.textContent = normalText; b.classList.remove('warn'); }, 4000);
+        return;
+      }
+      action(); b.removeAttribute('data-arm'); b.textContent = normalText; b.classList.remove('warn');
+    });
+  }
+  armButton($('q-reset'), 'Confirmar: apagar minhas perguntas', 'Restaurar exemplos', function () { S.questions = clone(DEF); save(); renderEditor(); editedIntro(); });
+  armButton($('s-clear'), 'Confirmar: zerar placar', 'Zerar placar', function () { S.players = {}; DP = {}; save(); renderTop(); renderStage(); });
+
+  /* ---------- ajustes e atalhos ---------- */
+  $('s-live').value = S.live;
+  $('s-secs').value = String(S.seconds);
+  $('s-delay').value = String(S.delay);
+  $('s-delay').addEventListener('change', function () { S.delay = +this.value; save(); });
+  $('s-sound').checked = S.sound;
+  $('s-auto').checked = S.auto;
+  $('s-per').value = String(S.perRound);
+  $('s-mix').checked = S.mix;
+  $('s-live').addEventListener('input', function () { S.live = this.value.trim() || 'Quiz da Live'; save(); renderStage(); });
+  $('s-secs').addEventListener('change', function () { S.seconds = +this.value; save(); if (phase === 'intro') renderStage(); });
+  $('s-sound').addEventListener('change', function () { S.sound = this.checked; save(); });
+  $('s-loop').checked = S.loop;
+  $('s-loopwait').value = String(S.loopWait);
+  $('s-loopwait').addEventListener('change', function () { S.loopWait = +this.value; save(); if (phase === 'end') loopArm('end', S.loopWait * 1000, loopNew); });
+  function loopSync() {
+    if (!S.loop || !S.auto) { loopClear(); if (phase === 'end' || phase === 'intro') renderStage(); return; }
+    if (phase === 'end') loopArm('end', S.loopWait * 1000, loopNew); else loopStart();
+  }
+  $('s-loop').addEventListener('change', function () { S.loop = this.checked; if (S.loop && !S.auto) { S.auto = true; $('s-auto').checked = true; } save(); loopSync(); });
+  $('s-auto').addEventListener('change', function () { S.auto = this.checked; save(); rearm(); loopSync(); });
+  $('s-per').addEventListener('change', function () { S.perRound = +this.value; save(); if (phase === 'intro') { buildDeck(); renderStage(); } });
+  $('s-mix').addEventListener('change', function () { S.mix = this.checked; save(); });
+  $('s-mini').checked = S.mini;
+  $('s-mini').addEventListener('change', function () { S.mini = this.checked; save(); if (phase === 'intro') { buildDeck(); renderStage(); } });
+
+  var guide = $('guide');
+  function openGuide() { try { if (guide.showModal) guide.showModal(); else guide.setAttribute('open', ''); } catch (e) {} }
+  $('btn-guide').addEventListener('click', openGuide);
+  $('guide-close').addEventListener('click', function () { try { guide.close(); } catch (e) { guide.removeAttribute('open'); } });
+  guide.addEventListener('click', function (e) { if (e.target === guide) { try { guide.close(); } catch (x) {} } });
+  // Na primeira vez que o jogo abre neste computador, mostra o guia.
+  if (!S.guideSeen) { S.guideSeen = true; save(); openGuide(); }
+  $('primary').addEventListener('click', primary);
+  $('palco-url').textContent = location.origin + '/?palco';
+  $('btn-palco').addEventListener('click', function () {
+    var w = null;
+    try { w = window.open('/?palco', 'quiz-palco', 'popup=yes,width=450,height=800'); } catch (e) {}
+    if (!w) say('O navegador bloqueou a janela. Libere pop-ups para este endereço ou abra ' + location.origin + '/?palco em uma nova aba.');
+  });
+  $('btn-restart').addEventListener('click', restart);
+  $('btn-end').addEventListener('click', finish);
+  if (document.fullscreenEnabled) {
+    $('btn-full').hidden = false;
+    $('btn-full').addEventListener('click', function () {
+      try {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else { var p = $('stage').requestFullscreen(); if (p && p.catch) p.catch(function () { say('Seu navegador não liberou a tela cheia.'); }); }
+      } catch (e) { say('Seu navegador não liberou a tela cheia.'); }
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('overlay').hidden) { closeOverlay(); return; }
+    var tag = (e.target && e.target.tagName) || '';
+    if (e.code === 'Space' && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'SUMMARY'].indexOf(tag) < 0) { e.preventDefault(); if (!$('primary').disabled) primary(); }
+  });
+
+  buildDeck();
+  renderEditor();
+  renderTop();
+  renderStage();
+  renderControls();
+  setConnUi();
+  $('feed-empty').hidden = false;
+  connectEvents();
+
+  // Para testes automáticos da lógica de tela (não usado no jogo).
+  window.__quiz = { deck: function () { return deck; }, bank: function () { return S.questions; }, onChat: onChat, primary: primary, state: function () { return { phase: phase, idx: idx, answers: answers.size, players: S.players }; } };
+})();
+</script>
+</body>
+</html>

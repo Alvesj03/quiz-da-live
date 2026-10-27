@@ -1,0 +1,43 @@
+﻿QUIZ DA LIVE (TIKTOK)
+=====================
+
+Um quiz para a sua live no TikTok. O público responde no chat comentando
+A, B, C ou D. O jogo lê o chat sozinho, conta quem acertou e mostra o Top 5.
+
+
+COMO ABRIR (Windows)
+--------------------
+1. Extraia a pasta do arquivo .zip (botão direito no .zip, "Extrair tudo").
+2. Dê dois cliques em "Quiz-da-Live.exe".
+3. Abre uma janela preta e, em seguida, o jogo no navegador.
+   Na primeira vez aparece o guia "Como o jogo funciona".
+   Ele também fica no botão "Como o jogo funciona".
+
+IMPORTANTE: deixe a janela preta aberta enquanto joga.
+Para encerrar o jogo, feche essa janela.
+
+Se o Windows avisar "O Windows protegeu o computador", clique em
+"Mais informações" e depois em "Executar assim mesmo". O aviso aparece
+porque o programa é novo e não tem assinatura digital paga.
+Se o antivírus bloquear, libere o arquivo "Quiz-da-Live.exe".
+Baixe sempre do link oficial de quem te passou o jogo.
+
+
+COMO JOGAR, RESUMIDO
+--------------------
+1. Comece sua live no TikTok.
+2. No jogo, digite seu @ em "Usuário que está ao vivo" e clique em
+   "Conectar ao chat". Espere ficar verde, "Conectado".
+3. Clique em "Abrir janela do palco" e mostre essa janela na live
+   (TikTok LIVE Studio ou OBS, captura de janela). Não minimize.
+4. Clique em "Lançar pergunta 1". O resto roda sozinho.
+
+Para testar sem live: botão "Testar com demonstração".
+
+O público responde comentando SÓ A LETRA (A, B, C ou D). Escrever a
+resposta inteira não vale.
+
+Cada pessoa usa o jogo no próprio computador, com a própria live.
+Não precisa de conta nem de senha. O jogo só lê comentários públicos do chat.
+O jogo usa uma biblioteca não oficial para ler o chat do TikTok. Se o TikTok
+mudar algo, a leitura pode parar de funcionar até sair uma versão nova.
